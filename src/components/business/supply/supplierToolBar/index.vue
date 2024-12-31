@@ -71,6 +71,8 @@ import { IconPlus, IconDelete } from '@arco-design/web-vue/es/icon'
 import { Message } from '@arco-design/web-vue'
 import { useSupplyStore } from '@/stores'
 
+const supplyStore = useSupplyStore()
+
 // 表单引用
 const formRef = ref(null)
 
@@ -102,11 +104,6 @@ const rules = {
   ]
 }
 
-// // 获取 store
-// const supplierStore = useSupplierStore()
-
-// const emit = defineEmits(['refresh'])
-
 // 显示创建弹窗
 const showCreateDialog = () => {
   createDialogVisible.value = true
@@ -123,7 +120,7 @@ const handleBeforeConfirm = async (done) => {
   try {
     const validResult = await formRef.value.validate()
     if (validResult === undefined || validResult === null) {
-      await supplierStore.createSupplier(formData.value)
+      await supplyStore.createSupplier(formData.value)
       Message.success('创建供应商成功')
       formRef.value.resetFields()
       emit('refresh')

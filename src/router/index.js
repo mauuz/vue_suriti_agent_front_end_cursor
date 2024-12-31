@@ -48,6 +48,18 @@ const router = createRouter({
               name: 'Suppliers',
               component: () => import('@/views/purchase/suppliers/index.vue'),
               meta: { title: '供应商管理' }
+            },
+            {
+              path: 'orders/:id',
+              name: 'PurchaseOrderDetail',
+              component: () => import('@/views/purchase/detail/index.vue'),
+              meta: {
+                hideInMenu: true,
+              },
+              beforeEnter: (to) => {
+                // 动态设置 meta title
+                to.meta.title = `采购订单 ${to.params.id}`;
+              }
             }
           ]
         },

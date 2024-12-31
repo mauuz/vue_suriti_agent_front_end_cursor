@@ -81,8 +81,30 @@ export const usePurchaseOrderStore = defineStore('purchaseOrder', () => {
     }
   };
 
-  const updatePurchaseOrder = async (orderId, orderData) => {
-    // 更新采购订单
+  const updatePurchaseOrder = async (orderData) => {
+    try {
+      console.log(orderData,2222)
+      loading.value = true;
+      const response = await request({
+        url: `/purchase-orders/${orderData.orderId}`,
+        method: 'PUT',
+        data: {
+          description: orderData.description,
+          order_type: orderData.type === 'STORAGE' ? 0 : 1,
+          remarks: orderData.remarks || ''
+        }
+      });
+
+      if (response.code === 200) {
+        return response.data;
+      }
+      throw new Error(response.message || '更新采购订单失败');
+    } catch (error) {
+      console.error('更新采购订单错误:', error);
+      throw error;
+    } finally {
+      loading.value = false;
+    }
   };
 
   const deletePurchaseOrder = async (orderId) => {

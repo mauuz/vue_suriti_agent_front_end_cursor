@@ -19,6 +19,7 @@
         :row-selection="rowSelection"
         @page-change="onPageChange"
         @page-size-change="onPageSizeChange"
+      
       />    
     </div>
   </div>
@@ -73,6 +74,7 @@ const onPageSizeChange = async (pageSize) => {
     console.error('每页条数切换失败:', error)
   }
 }
+
 
 // 初始化加载
 onMounted(() => {

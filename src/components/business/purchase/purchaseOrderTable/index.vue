@@ -26,10 +26,65 @@
         {{ record.approvalStatus }}
       </a-tag>
     </template>
+
+    <template #operations="{ record }">
+      <a-space>
+        <a-button 
+          type="primary" 
+          size="small"
+          @click="handleEdit(record)"
+        >
+          修改
+        </a-button>
+        <a-button 
+          type="outline" 
+          size="small"
+          @click="handleView(record)"
+        >
+          查看
+        </a-button>
+      </a-space>
+    </template>
   </a-table>
+
+  <a-modal
+    v-model:visible="editVisible"
+    title="修改采购订单"
+    @before-ok="handleEditSubmit"
+    @cancel="handleEditCancel"
+  >
+    <a-form :model="editForm" ref="editFormRef">
+      <a-form-item
+        field="description"
+        label="订单描述"
+        :rules="[{ required: true, message: '请输入订单描述' }]"
+      >
+        <a-input v-model="editForm.description" placeholder="请输入订单描述" />
+      </a-form-item>
+      
+      <a-form-item
+        field="type"
+        label="订单类型"
+        :rules="[{ required: true, message: '请选择订单类型' }]"
+      >
+        <a-select v-model="editForm.type">
+          <a-option value="STORAGE">外采入库</a-option>
+          <a-option value="DIRECT">外采直供</a-option>
+        </a-select>
+      </a-form-item>
+
+      <a-form-item field="remarks" label="备注">
+        <a-textarea v-model="editForm.remarks" placeholder="请输入备注信息" />
+      </a-form-item>
+    </a-form>
+  </a-modal>
 </template>
 
 <script setup>
+import { ref } from 'vue';
+import { Message } from '@arco-design/web-vue';
+import { usePurchaseOrderStore } from '@/stores/modules/purchase/purchaseOrderStore';
+import { useRouter } from 'vue-router';
 
 const props = defineProps({
   data: {
@@ -138,4 +193,71 @@ const getApprovalStatusColor = (status) => {
   }
   return colorMap[status] || 'gray'
 }
+
+const purchaseOrderStore = usePurchaseOrderStore();
+const editVisible = ref(false);
+const editFormRef = ref(null);
+const editForm = ref({
+  orderId: null,
+  description: '',
+  type: 'STORAGE',
+  remarks: ''
+});
+
+const router = useRouter();
+
+const handleEdit = (record) => {
+  console.log(record)
+  editForm.value = {
+    orderId: record.orderNo,
+    description: record.orderName,
+    type: record.orderType === 0 ? 'STORAGE' : 'DIRECT',
+    remarks: record.remark || ''
+  };
+  editVisible.value = true;
+};
+
+const handleEditSubmit = async () => {
+  try {
+    const result = await editFormRef.value.validate();
+
+    if(result)return false;
+    await purchaseOrderStore.updatePurchaseOrder(
+      editForm.value
+    );
+    Message.success('修改成功');
+    editVisible.value = false;
+    await purchaseOrderStore.getPurchaseOrders(
+      {
+        page: purchaseOrderStore.currentPage,
+        pageSize: purchaseOrderStore.pageSize
+      }
+    );
+    return true;
+  } catch (error) {
+    Message.error(error.message || '修改失败');
+  }
+};
+
+const handleEditCancel = () => {
+  editVisible.value = false;
+  editFormRef.value?.resetFields();
+};
+
+const handleView = (record) => {
+  console.log(record)
+  router.push({
+    name: 'PurchaseOrderDetail',
+    params: {
+      id: record.orderNo
+    }
+  });
+};
+
 </script>
+
+<style scoped>
+:deep(.arco-btn) {
+  margin-right: 8px;
+}
+</style>

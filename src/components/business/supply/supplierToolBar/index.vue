@@ -10,9 +10,9 @@
         </a-button>
         <a-button status="danger">
           <template #icon>
-            <icon-delete />
+            <icon-stop />
           </template>
-          删除
+          禁用
         </a-button>
       </a-space>
     </div>
@@ -34,29 +34,40 @@
     :on-before-ok="handleBeforeConfirm"
   >
     <a-form :model="formData" ref="formRef" :rules="rules">
-      <a-form-item field="supplierName" label="供应商名称" required>
-        <a-input v-model="formData.supplierName" placeholder="请输入供应商名称" />
+      <a-form-item field="name" label="供应商名称" required>
+        <a-input v-model="formData.name" placeholder="请输入供应商名称 tb-xxxx" />
       </a-form-item>
       
-      <a-form-item field="contactPerson" label="联系人" required>
-        <a-input v-model="formData.contactPerson" placeholder="请输入联系人姓名" />
-      </a-form-item>
-
-      <a-form-item field="contactPhone" label="联系电话" required>
-        <a-input v-model="formData.contactPhone" placeholder="请输入联系电话" />
-      </a-form-item>
-
-      <a-form-item field="address" label="地址">
+      <a-form-item field="shipping_address" label="发货地" required>
         <a-textarea 
-          v-model="formData.address" 
-          placeholder="请输入地址"
+          v-model="formData.shipping_address" 
+          placeholder="请输入发货地  省/市/县（多仓库，请用 ， 逗号分隔）"
           :auto-size="{ minRows: 2, maxRows: 3 }"
         />
       </a-form-item>
+      <a-form-item field="contactPerson" label="联系人">
+        <a-input v-model="formData.contact_person" placeholder="请输入联系人姓名" />
+      </a-form-item>
 
-      <a-form-item field="remark" label="备注">
+      <a-form-item field="contactInfo" label="联系电话">
+        <a-input v-model="formData.contact_info" placeholder="请输入联系电话" />
+      </a-form-item>
+
+      <a-form-item field="bankName" label="开户行">
+        <a-input v-model="formData.bank_name" placeholder="请输入开户行" />
+      </a-form-item>
+
+      <a-form-item field="paymentAccount" label="银行账号">
+        <a-input v-model="formData.payment_account" placeholder="请输入银行账号" />
+      </a-form-item>
+
+      <a-form-item field="payee" label="收款人">
+        <a-input v-model="formData.payee" placeholder="请输入收款人" />
+      </a-form-item>
+
+      <a-form-item field="remarks" label="备注">
         <a-textarea 
-          v-model="formData.remark" 
+          v-model="formData.remarks" 
           placeholder="请输入备注信息"
           :auto-size="{ minRows: 2, maxRows: 3 }"
         />
@@ -67,7 +78,7 @@
 
 <script setup>
 import { ref } from 'vue'
-import { IconPlus, IconDelete } from '@arco-design/web-vue/es/icon'
+import { IconPlus, IconStop } from '@arco-design/web-vue/es/icon'
 import { Message } from '@arco-design/web-vue'
 import { useSupplyStore } from '@/stores'
 
@@ -81,26 +92,24 @@ const createDialogVisible = ref(false)
 
 // 表单数据
 const formData = ref({
-  supplierName: '',
-  contactPerson: '',
-  contactPhone: '',
-  address: '',
-  remark: ''
+  name: '',
+  contact_info: '',
+  contact_person: '',
+  payment_account: '',
+  payee: '',
+  bank_name: '',
+  shipping_address: '',
+  remarks: ''
 })
 
 // 表单验证规则
 const rules = {
-  supplierName: [
+  name: [
     { required: true, message: '请输入供应商名称' },
     { maxLength: 100, message: '供应商名称不能超过100个字符' }
   ],
-  contactPerson: [
-    { required: true, message: '请输入联系人姓名' },
-    { maxLength: 50, message: '联系人姓名不能超过50个字符' }
-  ],
-  contactPhone: [
-    { required: true, message: '请输入联系电话' },
-    { pattern: /^1[3-9]\d{9}$/, message: '请输入正确的手机号码' }
+  shipping_address: [
+    { required: true, message: '请输入发货地址' }
   ]
 }
 
@@ -123,14 +132,17 @@ const handleBeforeConfirm = async (done) => {
       await supplyStore.createSupplier(formData.value)
       Message.success('创建供应商成功')
       formRef.value.resetFields()
-      emit('refresh')
+      await supplyStore.getSupplierList({
+        page: 1,
+        page_size: supplyStore.pageSize
+      })
       done(true)
     } else {
       done(false)
     }
   } catch (error) {
     console.log(error)
-    Message.error(error.message || '创建供应商失败')
+    Message.error("供应商已存在，不可重复添加！")
     done(false)
   }
 }

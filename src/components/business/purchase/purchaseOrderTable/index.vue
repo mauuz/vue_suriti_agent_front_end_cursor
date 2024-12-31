@@ -6,7 +6,7 @@
     @page-change="$emit('page-change', $event)"
     @page-size-change="$emit('page-size-change', $event)"
     :loading="loading"
-    row-key="id"
+    row-key="orderNo"
     :row-selection="rowSelection"
   >
     <template #orderStatus="{ record }">

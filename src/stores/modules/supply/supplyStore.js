@@ -43,7 +43,7 @@ export const useSupplyStore = defineStore('supply', () => {
           creatorName: supplier.full_name
         }));
         
-        total.value = response.data.total_count;
+        total.value = response.data.total_suppliers;
         currentPage.value = response.data.current_page;
         totalPages.value = response.data.total_pages;
         pageSize.value = response.data.page_size;
@@ -60,18 +60,19 @@ export const useSupplyStore = defineStore('supply', () => {
 
   const createSupplier = async (supplierData) => {
     try {
+      console.log(supplierData)
       loading.value = true;
       const response = await request({
         url: '/suppliers',
         method: 'POST',
         data: {
           name: supplierData.name,
-          contact_info: supplierData.contactInfo,
-          contact_person: supplierData.contactPerson,
-          payment_account: supplierData.paymentAccount,
+          contact_info: supplierData.contact_info,
+          contact_person: supplierData.contact_person,
+          payment_account: supplierData.payment_account,
           payee: supplierData.payee,
-          bank_name: supplierData.bankName,
-          shipping_address: supplierData.shippingAddress,
+          bank_name: supplierData.bank_name,
+          shipping_address: supplierData.shipping_address,
           remarks: supplierData.remarks || ''
         }
       });
@@ -88,8 +89,31 @@ export const useSupplyStore = defineStore('supply', () => {
     }
   };
 
-  const updateSupplier = async (supplierId, supplierData) => {
-    // 更新供应商信息
+  const updateSupplier = async (supplierData) => {
+    try {
+      loading.value = true;
+      console.log(supplierData)
+      const response = await request({
+        url: `/suppliers/${supplierData.supplierId}`,
+        method: 'PUT',
+        data: {
+          supplier_name: supplierData.supplierName,
+          contact_info: supplierData.contactInfo,
+          contact_person: supplierData.contactPerson,
+          payment_account: supplierData.paymentAccount,
+          payee: supplierData.payee,
+          bank_name: supplierData.bankName,
+          shipping_address: supplierData.shippingAddress,
+          remarks: supplierData.remarks || '',
+          status: supplierData.status
+        }
+      });
+      return response;
+    } catch (error) {
+      throw error;
+    } finally {
+      loading.value = false;
+    }
   };
 
   const deleteSupplier = async (supplierId) => {
@@ -126,6 +150,7 @@ export const useSupplyStore = defineStore('supply', () => {
         pageSize,
         currentSupplier,
         getSupplierList,
-        createSupplier
+        createSupplier,
+        updateSupplier
     }
 })

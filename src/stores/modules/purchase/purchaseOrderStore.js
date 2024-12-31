@@ -56,7 +56,28 @@ export const usePurchaseOrderStore = defineStore('purchaseOrder', () => {
   };
 
   const createPurchaseOrder = async (orderData) => {
-    // 创建新的采购订单
+    try {
+      loading.value = true;
+      const response = await request({
+        url: '/purchase-orders/',
+        method: 'POST',
+        data: {
+          description: orderData.description,
+          order_type: orderData.type === 'STORAGE' ? 0 : 1,
+          remarks: orderData.remark || ''
+        }
+      });
+
+      if (response.code === 200) {
+        return response.data;
+      }
+      throw new Error(response.message || '创建采购订单失败');
+    } catch (error) {
+      console.error('创建采购订单错误:', error);
+      throw error;
+    } finally {
+      loading.value = false;
+    }
   };
 
   const updatePurchaseOrder = async (orderId, orderData) => {

@@ -7,24 +7,28 @@ export const usePurchaseOrderStore = defineStore('purchaseOrder', () => {
   const purchaseOrders = ref([]);
   const currentOrder = ref(null);
   const loading = ref(false);
+  const total = ref(0);
+  const currentPage = ref(1);
+  const totalPages = ref(1);
+  const pageSize = ref(10);
 
   // 操作 (Actions)
   const getPurchaseOrders = async (params) => {
     try {
       loading.value = true;
-      const { page = 1, pageSize = 10 } = params;
+      const { page = 1, pageSize: size = 10 } = params;
       
       const response = await request({
         url: '/purchase-orders/',
         method: 'GET',
         params: {
           page,
-          page_size: pageSize
+          page_size: size
         }
       });
 
       if (response.code === 200) {
-        // 转换后端数据格式为前端所需格式
+        // 更新store中的状态
         purchaseOrders.value = response.data.purchase_orders.map(order => ({
           orderNo: order.order_id,
           orderName: order.description,
@@ -33,20 +37,17 @@ export const usePurchaseOrderStore = defineStore('purchaseOrder', () => {
           remark: order.remarks,
           orderType: order.order_type,
           orderStatus: getOrderStatus(order.status),
-          // 如果后端没有提供这些状态，可以根据 status 值来映射
           receiveStatus: getReceiveStatus(order.status),
           approvalStatus: getApprovalStatus(order.status)
         }));
-
-        return {
-          data: purchaseOrders.value,
-          total: response.data.total_count,
-          current: response.data.current_page,
-          totalPages: response.data.total_pages,
-          pageSize: response.data.page_size
-        };
+        
+        total.value = response.data.total_count;
+        currentPage.value = response.data.current_page;
+        totalPages.value = response.data.total_pages;
+        pageSize.value = response.data.page_size;
+      } else {
+        throw new Error(response.message || '获取采购订单列表失败');
       }
-      throw new Error(response.message || '获取采购订单列表失败');
     } catch (error) {
       console.error('获取采购订单列表错误:', error);
       throw error;
@@ -144,6 +145,10 @@ export const usePurchaseOrderStore = defineStore('purchaseOrder', () => {
     purchaseOrders,
     currentOrder,
     loading,
+    total,
+    currentPage,
+    totalPages,
+    pageSize,
 
     // 操作
     getPurchaseOrders,

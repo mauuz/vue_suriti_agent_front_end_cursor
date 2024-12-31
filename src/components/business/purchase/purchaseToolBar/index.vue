@@ -103,7 +103,7 @@
         // 刷新订单列表
         await purchaseOrderStore.getPurchaseOrders({
           page: 1,
-          pageSize: 10
+          pageSize: purchaseOrderStore.pageSize
         })
       }
     } catch (error) {

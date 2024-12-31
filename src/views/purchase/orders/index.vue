@@ -5,9 +5,17 @@
     </div>
     <div class="table">
       <PurchaseOrderTable 
-        :data="tableData"
-        :loading="loading"
-        :pagination="pagination"
+        :data="purchaseOrderStore.purchaseOrders"
+        :loading="purchaseOrderStore.loading"
+        :pagination="{
+          total: purchaseOrderStore.total,
+          current: purchaseOrderStore.currentPage,
+          pageSize: purchaseOrderStore.pageSize,
+          showTotal: true,
+          showPageSize: true,
+          pageSizeOptions: [10, 20, 50, 100],
+          showJumper: true
+        }"
         :row-selection="rowSelection"
         @page-change="onPageChange"
         @page-size-change="onPageSizeChange"
@@ -24,19 +32,6 @@ import PurchaseOrderTable from '@/components/business/purchase/purchaseOrderTabl
 import { Message } from '@arco-design/web-vue';
 
 const purchaseOrderStore = usePurchaseOrderStore()
-const tableData = ref([])
-const loading = ref(false)
-
-// 定义分页配置
-const pagination = ref({
-  total: 0,
-  current: 1,
-  pageSize: 10,
-  showTotal: true,
-  showPageSize: true,
-  pageSizeOptions: [10, 20, 50, 100],
-  showJumper: true,
-})
 
 // 表格选择配置
 const rowSelection = ref({
@@ -47,39 +42,21 @@ const rowSelection = ref({
 
 // 获取数据的方法
 const fetchData = async () => {
-  loading.value = true
   try {
-    const result = await purchaseOrderStore.getPurchaseOrders({
-      page: pagination.value.current,
-      pageSize: pagination.value.pageSize
+    await purchaseOrderStore.getPurchaseOrders({
+      page: purchaseOrderStore.currentPage,
+      pageSize: purchaseOrderStore.pageSize
     })
-    
-    // 确保返回的数据格式正确
-    if (result && Array.isArray(result.data)) {
-      tableData.value = result.data
-      pagination.value.total = result.total || 0
-    } else {
-      Message.error('订单获取失败！'+error );
-      console.error('返回数据格式错误:', result)
-      tableData.value = []
-      pagination.value.total = 0
-    }
   } catch (error) {
     console.error('获取数据失败:', error)
-    Message.error('订单获取失败！'+error );
-    // 发生错误时保持现有数据
-    tableData.value = []
-    pagination.value.total = 0
-  } finally {
-    loading.value = false
+    Message.error('订单获取失败！' + error)
   }
 }
 
 // 页码改变的处理函数
 const onPageChange = async (current) => {
   try {
-    pagination.value.current = current
-    console.log('onPageChange', current)
+    purchaseOrderStore.currentPage = current
     await fetchData()
   } catch (error) {
     console.error('页码切换失败:', error)
@@ -89,8 +66,8 @@ const onPageChange = async (current) => {
 // 每页条数改变的处理函数
 const onPageSizeChange = async (pageSize) => {
   try {
-    pagination.value.pageSize = pageSize
-    pagination.value.current = 1 // 重置到第一页
+    purchaseOrderStore.pageSize = pageSize
+    purchaseOrderStore.currentPage = 1 // 重置到第一页
     await fetchData()
   } catch (error) {
     console.error('每页条数切换失败:', error)

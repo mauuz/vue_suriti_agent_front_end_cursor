@@ -9,8 +9,25 @@ export const usePurchaseItemStore = defineStore('purchaseItem', () => {
   const loading = ref(false);
 
   // 操作 (Actions)
-  const getPurchaseItems = async (params) => {
-    // 获取采购项目列表
+  const getPurchaseItems = async (orderId) => {
+    try {
+      loading.value = true;
+      const response = await request({
+        url: `/items/${orderId}`,
+        method: 'GET'
+      });
+
+      if (response.code === 200) {
+        purchaseItems.value = response.data;
+        return response;
+      }
+      throw new Error(response.message || '获取采购项目列表失败');
+    } catch (error) {
+      console.error('获取采购项目列表错误:', error);
+      throw error;
+    } finally {
+      loading.value = false;
+    }
   };
 
   const createPurchaseItem = async (itemData) => {

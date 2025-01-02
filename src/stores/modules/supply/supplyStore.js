@@ -141,6 +141,22 @@ export const useSupplyStore = defineStore('supply', () => {
     // 黑名单供应商
   };
 
+  const searchSuppliers = async (searchKey) => {
+    try {
+      const response = await request({
+        url: '/suppliers',
+        method: 'GET',
+        params: {
+          name: searchKey
+        }
+      })
+      return response.data.suppliers || []
+    } catch (error) {
+      console.error('搜索供应商失败:', error)
+      throw error
+    }
+  }
+
     return {
         suppliers,
         loading,
@@ -151,6 +167,13 @@ export const useSupplyStore = defineStore('supply', () => {
         currentSupplier,
         getSupplierList,
         createSupplier,
-        updateSupplier
+        updateSupplier,
+        deleteSupplier,
+        getSupplierDetail,
+        evaluateSupplier,
+        activeSuppliers,
+        preferredSuppliers,
+        blacklistedSuppliers,
+        searchSuppliers
     }
 })

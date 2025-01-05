@@ -1,7 +1,7 @@
-import { createRouter, createWebHistory } from 'vue-router'
+import { createRouter, createWebHashHistory } from 'vue-router'
 
 const router = createRouter({
-  history: createWebHistory(),
+  history: createWebHashHistory(),
   routes: [
     {
       path: '/login',
@@ -68,6 +68,25 @@ const router = createRouter({
           name: 'Inventory',
           component: () => import('@/views/inventory/index.vue'),
           meta: { title: '库存' }
+        },
+        {
+          path: 'approval',
+          name: 'Approval',
+          meta: { title: '审批' },
+          children: [
+            {
+              path: 'pending',
+              name: 'PendingApproval',
+              component: () => import('@/views/approval/pending/index.vue'),
+              meta: { title: '待审批项目' }
+            },
+            {
+              path: 'history',
+              name: 'ApprovalHistory',
+              component: () => import('@/views/approval/history/index.vue'),
+              meta: { title: '审批历史' }
+            }
+          ]
         }
       ]
     }

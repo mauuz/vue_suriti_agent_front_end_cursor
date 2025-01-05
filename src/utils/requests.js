@@ -4,7 +4,8 @@ import axios from 'axios';
 //baseURL: 'https://api.agent.jellon.store/api/v1/'
 const instance = axios.create({
     baseURL: 'https://api.agent.jellon.store/api/v1/', // 请替换为你的基础URL
-    timeout: 10000, // 请求超时时间
+    //baseURL: 'http://localhost:8000/api/v1/', // 请替换为你的基础URL
+    timeout: 18000, // 请求超时时间
 });
 
 // 请求拦截器

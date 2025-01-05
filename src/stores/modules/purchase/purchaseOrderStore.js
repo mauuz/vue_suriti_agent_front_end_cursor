@@ -19,7 +19,7 @@ export const usePurchaseOrderStore = defineStore('purchaseOrder', () => {
       const { page = 1, pageSize: size = 10 } = params;
       
       const response = await request({
-        url: '/purchase-orders/',
+        url: '/purchase-orders',
         method: 'GET',
         params: {
           page,
@@ -29,20 +29,22 @@ export const usePurchaseOrderStore = defineStore('purchaseOrder', () => {
 
       if (response.code === 200) {
         // 更新store中的状态
-        purchaseOrders.value = response.data.purchase_orders.map(order => ({
+        purchaseOrders.value = response.data.items.map(order => ({
           orderNo: order.order_id,
           orderName: order.description,
           operator: order.creator_full_name,
           operateTime: order.created_at,
           remark: order.remarks,
           orderType: order.order_type,
+          supplierName: order.supplier_name,
+          supplierId: order.supplier_id,
           orderStatus: getOrderStatus(order.status),
           receiveStatus: getReceiveStatus(order.status),
           approvalStatus: getApprovalStatus(order.status)
         }));
         
         total.value = response.data.total_count;
-        currentPage.value = response.data.current_page;
+        currentPage.value = response.data.page;
         totalPages.value = response.data.total_pages;
         pageSize.value = response.data.page_size;
       } else {
@@ -60,10 +62,11 @@ export const usePurchaseOrderStore = defineStore('purchaseOrder', () => {
     try {
       loading.value = true;
       const response = await request({
-        url: '/purchase-orders/',
+        url: '/purchase-orders',
         method: 'POST',
         data: {
           description: orderData.description,
+          supplier_id: orderData.supplier_id,
           order_type: orderData.type === 'STORAGE' ? 0 : 1,
           remarks: orderData.remark || ''
         }
@@ -91,7 +94,8 @@ export const usePurchaseOrderStore = defineStore('purchaseOrder', () => {
         data: {
           description: orderData.description,
           order_type: orderData.type === 'STORAGE' ? 0 : 1,
-          remarks: orderData.remarks || ''
+          remarks: orderData.remarks || '',
+          supplier_id: orderData.supplier_id
         }
       });
 

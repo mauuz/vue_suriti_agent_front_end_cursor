@@ -52,7 +52,8 @@
     title="修改采购订单"
     @before-ok="handleEditSubmit"
     @cancel="handleEditCancel"
-  >
+  > 
+
     <a-form :model="editForm" ref="editFormRef">
       <a-form-item
         field="description"
@@ -61,7 +62,30 @@
       >
         <a-input v-model="editForm.description" placeholder="请输入订单描述" />
       </a-form-item>
-      
+      <a-form-item 
+        field="supplier_id" 
+        label="供应商" 
+        :rules="[{ required: true, message: '请选择供应商' }]"
+      >
+        <a-select
+          v-model="editForm.supplier_id"
+          placeholder="请选择供应商"
+          allow-search
+          :loading="supplyStore.loading"
+          :filter-option="true"
+
+          @search="handleSupplierSearch"
+        >
+          <a-option
+            v-for="option in supplierOptions"
+            :key="option.value"
+            :value="option.value"
+          >
+            {{ option.label }}
+          </a-option>
+        </a-select>
+      </a-form-item>
+
       <a-form-item
         field="type"
         label="订单类型"
@@ -81,11 +105,18 @@
 </template>
 
 <script setup>
-import { ref } from 'vue';
+import { ref, nextTick } from 'vue';
 import { Message } from '@arco-design/web-vue';
 import { usePurchaseOrderStore } from '@/stores/modules/purchase/purchaseOrderStore';
 import { useRouter } from 'vue-router';
-
+import { useSupplyStore } from '@/stores'
+const supplyStore = useSupplyStore()
+const searchKey = ref('')
+const supplierOptions = ref([])
+const handleSupplierSearch = async (searchValue) => {
+    searchKey.value = searchValue; // 保存搜索关键词
+    await fetchSuppliers(); // 调用搜索接口
+};
 const props = defineProps({
   data: {
     type: Array,
@@ -123,6 +154,11 @@ const columns = [
     title: '订单名称',
     dataIndex: 'orderName',
     width: 200,
+  },
+  {
+    title: '供应商',
+    dataIndex: 'supplierName',
+    width: 100,
   },
   {
     title: '下单状态',
@@ -201,19 +237,32 @@ const editForm = ref({
   orderId: null,
   description: '',
   type: 'STORAGE',
-  remarks: ''
+  remarks: '',
+  supplier_id: ''
 });
 
 const router = useRouter();
 
-const handleEdit = (record) => {
+const handleEdit = async (record) => {
+  console.log('supplier_id type:', typeof record.supplier_id);
+  console.log('supplier_id value:', record.supplier_id);
+  
   console.log(record)
+  // // 先设置选项
+  supplierOptions.value = [{
+    label: record.supplierName,
+    value: record.supplierId
+  }];
+  
+  // // 然后设置表单值
   editForm.value = {
     orderId: record.orderNo,
     description: record.orderName,
     type: record.orderType === 0 ? 'STORAGE' : 'DIRECT',
-    remarks: record.remark || ''
+    remarks: record.remark || '',
+    supplier_id: record.supplierId  // 使用转换后的 ID
   };
+  
   editVisible.value = true;
 };
 
@@ -253,6 +302,17 @@ const handleView = (record) => {
     }
   });
 };
+const fetchSuppliers = async () => {
+    try {
+      const result = await supplyStore.searchSuppliers(searchKey.value);
+      supplierOptions.value = result.map(item => ({
+        label: item.name,
+        value: item.id  // value 存储供应商 ID
+      }));
+    } catch (error) {
+      Message.error('获取供应商列表失败');
+    }
+  };
 
 </script>
 

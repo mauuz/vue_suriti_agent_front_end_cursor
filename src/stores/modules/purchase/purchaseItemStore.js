@@ -67,7 +67,7 @@ export const usePurchaseItemStore = defineStore('purchaseItem', () => {
       formData.append('purchase_item_id', itemId)
       
       const response = await request({
-        url: '/images',
+        url: '/images/',
         method: 'POST',
         data: formData,
         headers: {
@@ -103,7 +103,17 @@ export const usePurchaseItemStore = defineStore('purchaseItem', () => {
   };
 
   const updatePurchaseItem = async (itemId, itemData) => {
-    // 更新采购项目
+    try {
+      const response = await request({
+        url: `/items/${itemId}`,
+        method: 'PUT',
+        data: itemData
+      });
+      return response;
+    } catch (error) {
+      console.error('更新采购项目错误:', error);
+      throw error;
+    }
   };
 
   const deletePurchaseItem = async (itemId) => {
@@ -118,6 +128,21 @@ export const usePurchaseItemStore = defineStore('purchaseItem', () => {
       throw error;
     }
   };
+
+  const createPurchaseItemBatch = async (purchaseOrderId, itemData) => {
+    // 批量创建采购项目
+    try {
+      const response = await request({
+        url: `/items/batch/${purchaseOrderId}`,
+        method: 'POST',
+        data: {items:itemData}
+      });
+      return response;
+    } catch (error) {
+      console.error('批量创建采购项目错误:', error);
+      throw error;
+    }
+  };  
 
   const getPurchaseItemDetail = async (itemId) => {
     // 获取采购项目详情
@@ -147,6 +172,7 @@ export const usePurchaseItemStore = defineStore('purchaseItem', () => {
     getPurchaseItemDetail,
     deletePurchaseItemPic,
     uploadPurchaseItemPic,
+    createPurchaseItemBatch,
 
     // 计算属性
     activePurchaseItems,

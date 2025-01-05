@@ -289,10 +289,10 @@ const rules = {
 }
 
 // Fetch suppliers when the component is mounted
-onMounted(() => {
-  supplyStore.getSupplierList({
-    page: supplyStore.currentPage,
-    pageSize: supplyStore.pageSize
-  })
-})
+// onMounted(() => {
+//   supplyStore.getSupplierList({
+//     page: supplyStore.currentPage,
+//     pageSize: supplyStore.pageSize
+//   })
+// })
 </script> 

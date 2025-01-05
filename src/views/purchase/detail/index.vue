@@ -4,13 +4,30 @@
       <purchase-item-detail-tool-bar
       @add-row="handleAddRow"
       @delete-rows="handleDeleteRows"
+      @excel-add="handleExcelAdd"
+      @excel-replace="handleExcelReplace"
+      @submit-approval="handleSubmitApproval"
+      @order-confirm="handleOrderConfirm"
       />
     </div>
+    <!-- <div class="total-count">
+    <a-table :data="[totalStats]" :bordered="true" :pagination="false">
+      <template #columns>
+        <a-table-column title="总项目数" data-index="totalItems" align="center" />
+        <a-table-column title="总数量" data-index="totalQuantity" align="center" />
+        <a-table-column 
+          title="总金额" 
+          data-index="totalAmount" 
+          align="center"
+          :formatter="(value) => Number(value).toFixed(2)"
+        />
+      </template>
+    </a-table>
+  </div> -->
     <div class="purchase-item-detail-container">
         <div ref="tableContainer" class="table-container"></div>
     </div>
   </div>
-  
   <upload-image-dialog
       :visible="dialogVisible"
       @update:visible="dialogVisible = $event"
@@ -98,46 +115,54 @@
         />
       </a-form-item>
 
-      <a-form-item 
-        field="supplier" 
-        label="供应商" 
-        :rules="[{ required: true, message: '请选择供应商' }]"
-      >
-        <a-select
-          v-model="addFormData.supplier"
-          placeholder="请选择供应商"
-          allow-search
-          :loading="supplyStore.loading"
-          :filter-option="true"
-          :model-value="addFormData.supplier"
-          @search="handleSupplierSearch"
-        >
-          <a-option
-            v-for="option in supplierOptions"
-            :key="option.value"
-            :value="option.value"
-            :label="option.label"
-          >
-            {{ option.label }}
-          </a-option>
-        </a-select>
-      </a-form-item>
 
       <a-form-item field="remark" label="备注">
         <a-textarea v-model="addFormData.remark" placeholder="请输入备注" />
       </a-form-item>
     </a-form>
   </a-modal>
+
+  <!-- 添加隐藏的文件输入框 -->
+  <input
+    type="file"
+    ref="excelAddInputRef"
+    accept=".xlsx,.xls"
+    style="display: none"
+    @change="handleExcelAddFileChange"
+  />
+  <input
+    type="file"
+    ref="excelReplaceInputRef"
+    accept=".xlsx,.xls"
+    style="display: none"
+    @change="handleExcelReplaceFileChange"
+  />
+
+  <!-- Excel预览表格组件 -->
+  <excel-preview-table
+    v-model:visible="previewModalVisible"
+    :data="previewData"
+    @ok="handlePreviewOk"
+    @cancel="handlePreviewCancel"
+    @refresh-data="fetchOrderDetail"
+  />
 </template>
 
 <script setup>
 import { ref, onMounted, onUnmounted, nextTick, h,computed } from 'vue';
 import { useRoute } from 'vue-router';
-import { usePurchaseItemStore, useSupplyStore } from '@/stores';
+import { usePurchaseItemStore, useSupplyStore,useApprovalStore} from '@/stores';
 import * as VTable from '@visactor/vtable';
 import { Message, Modal, Image, ImagePreviewGroup } from '@arco-design/web-vue';
 import UploadImageDialog from '@/components/business/purchase/purchaseItemUploadPic/index.vue'
 import PurchaseItemDetailToolBar from '@/components/business/purchase/purchaseItemDetailToolBar/index.vue'
+import * as ExcelJS from 'exceljs';
+import * as XLSX from 'xlsx';
+import ExcelPreviewTable from '@/components/business/purchase/excelPreviewTable/index.vue';
+import { DateInputEditor, InputEditor, ListEditor, TextAreaEditor } from '@visactor/vtable-editors';
+
+
+const approvalStore = useApprovalStore();
 const route = useRoute();
 const purchaseOrderItemStore = usePurchaseItemStore();
 const supplyStore = useSupplyStore();
@@ -161,19 +186,215 @@ const addFormData = ref({
 })
 const supplierOptions = ref([])
 const searchKey = ref('')
+const excelAddInputRef = ref(null);
+const excelReplaceInputRef = ref(null);
+
 const showUploadDialog = (purchaseItemId) => {
   currentPurchaseItemId.value = purchaseItemId
   dialogVisible.value = true
 }
+
+// 触发文件选择
+const handleExcelAdd = () => {
+  excelAddInputRef.value?.click();
+};
+
+const handleExcelReplace = () => {
+  excelReplaceInputRef.value?.click();
+};
+
+// 处理文件选择变化 - 新增导入
+const handleExcelAddFileChange = async (event) => {
+  const file = event.target.files[0];
+  if (!file) return;
+
+  try {
+    const reader = new FileReader();
+    
+    reader.onload = (e) => {
+      try {
+        const binaryString = e.target.result;
+        const workbook = XLSX.read(binaryString, { type: 'binary' });
+        const worksheet = workbook.Sheets[workbook.SheetNames[0]];
+        
+        // 将工作表转换为数组
+        const sheetData = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
+        
+        // 获取表头
+        const headers = sheetData[0];
+        const data = [];
+        let sequence = 1;
+        
+        // 定义表头映射关系
+        const headerMapping = {
+          '产品代码': 'product_code',
+          '产品描述': 'product_name_en',
+          '规格': 'specification',
+          '中文翻译': 'product_name_zh',
+          '数量': 'quantity',
+          '单位': 'unit',
+          '成本价': 'unit_price',
+          '备注': 'remark'  // 添加备注字段
+        };
+
+        // 验证表头是否包含必要字段
+        const requiredHeaders = ['产品代码', '产品描述', '规格', '中文翻译', '数量', '单位', '成本价'];
+        const missingHeaders = requiredHeaders.filter(header => !headers.includes(header));
+        
+        if (missingHeaders.length > 0) {
+          Message.error(`Excel 缺少必要的列: ${missingHeaders.join(', ')}`);
+          return;
+        }
+
+        // 处理数据行（跳过表头）
+        for (let i = 1; i < sheetData.length; i++) {
+          const row = sheetData[i];
+          if (!row || row.length === 0) continue; // 跳过空行
+          
+          const rowData = {
+            key: sequence.toString(),
+            sequence: sequence
+          };
+
+          // 遍历每一列
+          headers.forEach((header, index) => {
+            const mappedField = headerMapping[header];
+            if (mappedField) {
+              let value = row[index];
+              
+              // 确保值不是 undefined
+              if (value !== undefined) {
+                // 对数字类型字段进行转换
+                if (mappedField === 'quantity') {
+                  value = parseInt(value) || 0;
+                } else if (mappedField === 'unit_price') {
+                  value = parseFloat(value).toFixed(8) || 0;
+                } else {
+                  value = String(value).trim();
+                }
+                
+                rowData[mappedField] = value;
+              }
+            }
+          });
+
+          // 计算总价
+          rowData.total_price = Number(rowData.quantity * rowData.unit_price).toFixed(8);
+
+          // 检查必填字段是否都有值
+          const requiredFields = ['product_code', 'product_name_en', 'specification', 
+                                'product_name_zh', 'quantity', 'unit', 'unit_price'];
+          const isValid = requiredFields.every(field => {
+            const value = rowData[field];
+            return value !== undefined && value !== null && value !== '';
+          });
+
+          // 只添加有效的数据行
+          if (isValid) {
+            data.push(rowData);
+            sequence++;
+          }
+        }
+
+        if (data.length === 0) {
+          Message.error('没有找到有效数据');
+          return;
+        }
+
+        // 更新预览数据并显示预览表格
+        previewData.value = data;
+        nextTick(() => {
+          previewModalVisible.value = true;
+        });
+
+      } catch (innerError) {
+        console.error('数据处理错误:', innerError);
+        Message.error('数据处理失败：' + (innerError.message || '未知错误'));
+      }
+    };
+
+    reader.onerror = (error) => {
+      console.error('文件读取错误:', error);
+      Message.error('文件读取失败');
+    };
+
+    // 以二进制方式读取文件
+    reader.readAsBinaryString(file);
+
+  } catch (error) {
+    console.error('Excel处理错误:', error);
+    Message.error('Excel处理失败：' + (error.message || '未知错误'));
+  } finally {
+    event.target.value = '';
+  }
+};
+
+// 处理文件选择变化 - 覆盖导入
+const handleExcelReplaceFileChange = async (event) => {
+  const file = event.target.files[0];
+  if (!file) return;
+
+  try {
+    const workbook = new ExcelJS.Workbook();
+    await workbook.xlsx.load(await file.arrayBuffer());
+    const worksheet = workbook.worksheets[0]; // 获取第一个工作表
+    
+    console.log('Excel内容:', worksheet);
+    // 这里先简单打印一下读取到的内容
+    worksheet.eachRow((row, rowNumber) => {
+      console.log(`Row ${rowNumber}:`, row.values);
+    });
+
+  } catch (error) {
+    console.error('Excel处理错误:', error);
+    Message.error('Excel处理失败：' + (error.message || '未知错误'));
+  } finally {
+    // 清空文件输入框，允许重复选择同一文件
+    event.target.value = '';
+  }
+};
 
 const handleUploadSuccess = (files) => {
   console.log('上传的文件列表：', files)
   console.log('当前采购项目ID：', currentPurchaseItemId.value)
   // 这里可以添加上传成功后的刷新逻辑
 }
+
+// 提交审批
+const handleSubmitApproval = async() => {
+  console.log('提交审批');
+  const purchaseItemIdIndex = columns.findIndex(col => col.field === 'purchase_item_id');
+
+  const data = tableInstance.getAllBodyCells();
+  console.log('data:', data);
+
+  // 创建一个新的列表来存储 goods_id
+  const goodsIdList = [];
+
+  // 循环遍历 data 并提取 goods_id
+  data.forEach(row => {
+    const goodsId = row[purchaseItemIdIndex]?.dataValue; // 获取 goods_id 的 dataValue
+    if (goodsId !== undefined) {
+      goodsIdList.push(goodsId);
+    }
+  });
+
+  
+  await approvalStore.submitBatchApproval({
+    purchase_item_id_list: goodsIdList,
+    applicant_reason: 'test'
+  });
+}
+const handleOrderConfirm = async() => {
+  console.log('确认下单')
+}
+
+
+// vtable
 // 解构事件类型
 const { DBLCLICK_CELL,ICON_CLICK} = VTable.ListTable.EVENT_TYPE;
-
+const inputEditor = new InputEditor();
+VTable.register.editor('input-editor', inputEditor);
 VTable.register.icon('view', {
   type: 'svg',
   svg: '<svg t="1735723680994" class="icon" viewBox="0 0 1024 1024" version="1.1" xmlns="http://www.w3.org/2000/svg" p-id="6321" width="32" height="32"><path d="M928.842245 512.091074c0-5.006014-0.846274-9.193383-1.086751-9.691733-0.182149-2.480494-1.028423-7.001461-1.815345-9.374508-0.210801-0.590448-0.484024-1.209548-0.724501-1.799996-0.424672-1.360997-0.876973-2.691295-1.390673-3.749394-76.871785-168.137395-242.376213-281.144168-411.782507-281.144168-169.375595 0-334.865697 112.902396-411.388535 280.130072-0.921999 1.815345-1.572822 3.553942-1.981121 5.066389-0.181125 0.49835-0.39295 0.967024-0.558725 1.406023-1.512447 4.430916-1.542122 7.514137-1.421372 6.712889-0.710175 3.251044-1.360997 9.722432-1.360997 9.722432-0.181125 1.949398-0.181125 3.50687 0.030699 5.442966 0 0 0.649799 5.65479 0.968048 6.80294 0.090051 1.602498 0.483001 3.931542 0.951675 6.048763l-0.030699 0c0.408299 1.814322 0.968048 3.568269 1.738597 5.291516 0.393973 1.330298 0.862647 2.570545 1.270946 3.507894 76.976162 168.166047 242.436588 281.20352 411.781484 281.20352 169.436994 0 334.941422-112.945375 410.936233-279.328823 1.177825-2.177596 1.935072-4.233418 2.448772-6.018064 0.2415-0.543376 0.454348-1.027399 0.604774-1.511423 1.331321-3.872191 1.602498-7.227612 1.481747-7.227612l-0.028653 0.029676C928.027693 520.921183 928.842245 516.89959 928.842245 512.091074zM872.717993 514.146896c-0.029676 0.121773-0.091074 0.272199-0.151449 0.393973-0.090051 0.36225-0.240477 0.785899-0.332575 1.209548-68.403926 147.420561-212.830293 246.337431-360.191502 246.337431-146.997935 0-291.168476-98.642624-360.252901-246.578931-0.166799-0.5137-0.287549-0.998747-0.468674-1.481747-0.030699-0.484024-0.12075-0.876973-0.150426-1.150196-0.060375-0.300852-0.12075-0.724501-0.166799-1.088798l0-0.3776c0.166799-0.620124 0.286526-1.239224 0.347924-1.919722 0.12075-0.36225 0.211824-0.710175 0.347924-1.103124C220.132094 360.89042 364.680235 261.928524 512.041444 261.928524c147.420561 0 291.940049 99.051947 360.161826 246.322082 0.060375 0.287549 0.121773 0.530073 0.212848 0.726547 0.060375 0.2415 0.119727 0.484024 0.240477 0.740874 0.151449 1.104147 0.272199 2.192945 0.423649 2.736321C872.899118 513.028423 872.809067 513.572822 872.717993 514.146896z" fill="#272536" p-id="6322"></path><path d="M512.041444 373.060601c-76.598562 0-138.954749 62.325487-138.954749 138.939399 0 76.598562 62.356187 138.954749 138.954749 138.954749 76.598562 0 138.954749-62.356187 138.954749-138.954749C650.996193 435.386088 588.640006 373.060601 512.041444 373.060601zM512.041444 595.372849c-45.935192 0-83.371826-37.406958-83.371826-83.371826 0-45.950542 37.436634-83.356476 83.371826-83.356476 45.964868 0 83.373873 37.406958 83.373873 83.356476C595.414293 557.965891 558.006312 595.372849 512.041444 595.372849z" fill="#272536" p-id="6323"></path></svg>',
@@ -196,72 +417,92 @@ VTable.register.icon('upload', {
   cursor: 'pointer',
 });
 
+
 // 定义表格列配置
 const columns = [
   {
     field: 'sequence',
     title: '序号',
-    minWidth: 100,
+    minWidth: 90,
+    width: 90,
     sort: (v1, v2, order) => {
         // 使用自定义排序逻辑
         if (order === 'desc') {
           return v1 === v2 ? 0 : v1 > v2 ? -1 : 1;
         }
         return v1 === v2 ? 0 : v1 > v2 ? 1 : -1;
-      }
+    },
+    editor: 'input-editor'
   },
   {
     field: 'product_code',
     title: '产品编码',
-    minWidth: 160,
+    minWidth: 100,
+    width: 100,
+    editor: 'input-editor'
   },
   {
     field: 'product_name_zh',
     title: '产品名称(中)',
-    width: 150,
+    minWidth: 100,
+    width: 100,
+    editor: 'input-editor'
   },
   {
     field: 'product_name_en',
     title: '产品名称(英)',
+    minWidth: 150,
     width: 150,
+    editor: 'input-editor'
   },
   {
     field: 'specification',
     title: '规格',
+    minWidth: 150,
     width: 150,
+    editor: 'input-editor'
   },
   {
     field: 'quantity',
     title: '数量',
+    minWidth: 100,
     width: 100,
+    editor: 'input-editor'
   },
   {
     field: 'unit',
     title: '单位',
+    minWidth: 80,
     width: 80,
+    editor: 'input-editor'
   },
   {
     field: 'unit_price',
     title: '单价',
+    minWidth: 120,
     width: 120,
-    formatter: (value) => Number(value).toFixed(2)
+    formatter: (value) => Number(value).toFixed(2),
+    editor: 'input-editor'
   },
   {
     field: 'total_price',
     title: '总价',
+    minWidth: 120,
     width: 120,
-    formatter: (value) => Number(value).toFixed(2)
+    formatter: (value) => Number(value).toFixed(2),
+    editor: 'input-editor'
   },
   {
     field: 'pics',
     title: '产品图片',
     minWidth: 112,
+    width: 112,
     headerStyle: {
       textAlign: 'center',
       fontWeight: 'bold',
       backgroundColor: '#f2f3f5'
     },
-    icon:['upload','view'],
+    icon: ['upload', 'view'],
     cellStyle: () => ({
       textAlign: 'center'
     })
@@ -269,60 +510,78 @@ const columns = [
   {
     field: 'creator',
     title: '创建人',
+    minWidth: 100,
     width: 100,
   },
   {
-    field: 'supplier',
-    title: '供应商',
-    width: 150,
+    field: 'approval_status',
+    title: '审批状态',
+    minWidth: 100,
+    width: 100,
+    style: ({dataValue}) => {
+      const colorMap = {
+        '未提交': '#86909c',
+        '正在审核': '#4080ff',
+        '通过': '#4cd263',  
+        '驳回': '#f53f3f'   
+      };
+      return {
+        color: colorMap[dataValue]
+      };
+    }
   },
   {
-    field: 'purchaser',
-    title: '采购员',
+      field: 'approval_remark',
+      title: '审批意见',
+      minWidth: 150,
+      width: 150,
+  
+  },
+  {
+    field: 'order_status',
+    title: '下单状态',
+    minWidth: 100,
     width: 100,
+    style: ({ dataValue }) => {
+      const colorMap = {
+        "未下单": '#f7ba1e',  // orange
+        "已下单": '#00b42a',  // green
+      };
+      return {
+        color: colorMap[dataValue] || '#86909c'
+      };
+    }
   },
   {
     field: 'remark',
     title: '备注',
+    minWidth: 200,
     width: 200,
+    editor: 'input-editor'
+  },
+  {
+    field: 'purchaser',
+    title: '采购员',
+    minWidth: 100,
+    width: 100,
   },
   {
     field: 'purchase_item_id',
     title: '采购项目编号',
     minWidth: 160,
+    width: 160,
   },
   {
     field: 'created_at',
     title: '创建时间',
+    minWidth: 180,
     width: 180,
   },
   {
     field: 'order_time',
     title: '下单时间',
+    minWidth: 180,
     width: 180,
-  },
-  {
-    field: 'order_status',
-    title: '状态',
-    width: 100,
-    formatter: (value) => {
-      const statusMap = {
-        0: '待处理',
-        1: '已下单',
-        2: '已取消'
-      };
-      return statusMap[value] || '未知状态';
-    },
-    style: (value) => {
-      const colorMap = {
-        0: '#f7ba1e',  // orange
-        1: '#00b42a',  // green
-        2: '#f53f3f'   // red
-      };
-      return {
-        color: colorMap[value] || '#86909c'
-      };
-    }
   }
 ];
 
@@ -340,15 +599,18 @@ const initTable = (data) => {
     width: '100%',
     height: 2000,
     showFrozenIcon: true,
-    defaultHeaderRowHeight: 50,
-    defaultRowHeight: 40,
+    defaultHeaderRowHeight: 35,
+    defaultRowHeight: 30,
+    keyboardOptions: {
+    copySelected: true
+  },
     hover: {
       highlightMode: 'row'
     },
     theme: {
       defaultStyle: {
         fontFamily: 'Arial',
-        fontSize: 20,
+        fontSize: 17,
         lineHeight: 1.5,
         color: '#1d2129',
         borderColor: '#e5e6eb'
@@ -368,6 +630,72 @@ const initTable = (data) => {
     }
   });
 
+  // 监听单元格值变化,并同步
+  tableInstance.on('change_cell_value', async(args) => {
+    const purchaseItemIdIndex = columns.findIndex(col => col.field === 'purchase_item_id');
+    const unitPriceIndex = columns.findIndex(col => col.field === 'unit_price');
+    const totalPriceIndex = columns.findIndex(col => col.field === 'total_price');
+    const quantityIndex = columns.findIndex(col => col.field === 'quantity');
+    
+    // 获取当前行的采购项目ID
+    const purchaseItemId = tableInstance.getCellValue(purchaseItemIdIndex, args.row);
+    const updatedItemName = columns[args.col].field;
+    
+    // 获取当前行的所有数据
+    const currentRowData = {};
+    columns.forEach(col => {
+      currentRowData[col.field] = tableInstance.getCellValue(
+        columns.findIndex(c => c.field === col.field),
+        args.row
+      );
+    });
+    
+    // 计算新的值
+    let quantity = parseInt(currentRowData.quantity);
+    let unitPrice = Number(currentRowData.unit_price);
+    let totalPrice = Number(currentRowData.total_price);
+
+    if (updatedItemName === 'quantity') {
+      quantity = parseInt(args.changedValue) || 0;
+      totalPrice = quantity * unitPrice;
+    } else if (updatedItemName === 'unit_price') {
+      unitPrice = Number(args.changedValue);
+      totalPrice = quantity * unitPrice;
+    } else if (updatedItemName === 'total_price') {
+      totalPrice = Number(args.changedValue);
+      if (quantity !== 0) {
+        unitPrice = totalPrice / quantity;
+      }
+    }
+
+    // 更新表格显示 - 保留原有数据,只更新计算相关的字段
+    tableInstance.updateRecords(
+      [{
+        ...currentRowData,
+        quantity: quantity,
+        unit_price: unitPrice.toFixed(8),
+        total_price: totalPrice.toFixed(8)
+      }],
+      [args.row - 1]
+    );
+
+    // 更新后端数据
+    try {
+      await purchaseOrderItemStore.updatePurchaseItem(purchaseItemId, {
+        [updatedItemName]: args.changedValue,
+        quantity: quantity,
+        unit_price: unitPrice.toFixed(8),
+        total_price: totalPrice.toFixed(8)
+      });
+      Message.success('更新成功');
+      await fetchOrderDetail();
+    } catch (error) {
+      console.error('更新失败:', error);
+      Message.error('更新失败：' + (error.message || '未知错误'));
+      await fetchOrderDetail();
+    }
+  });
+  
   // 监听产品图片列的双击事件
   tableInstance.on(ICON_CLICK, async(args) => {
     console.log('Icon click args:', args);
@@ -453,7 +781,12 @@ const fetchOrderDetail = async () => {
         total_price: Number(item.total_price).toFixed(8),
         order_time: item.order_time || '-',
         reviewer: item.reviewer || '-',
-        purchaser: item.purchaser || '-'
+        purchaser: item.purchaser || '-',
+        order_status: item.order_status === 1 ? '已下单' : '未下单',  // 直接处理状态显示
+        approval_status: item.approval_status.status === null ? '未提交' : 
+              item.approval_status.status === 0 ? '正在审核' :
+              item.approval_status.status === 1 ? '通过' :
+              item.approval_status.status === 2 ? '驳回' : '未知状态'
       }));
 
       console.log('Formatted Data:', formattedData);
@@ -512,7 +845,6 @@ const handleAddSubmit = async () => {
       const submitData = {
         purchase_order_id: route.params.id,
         sequence: addFormData.value.sequence,
-        supplier_id: addFormData.value.supplier,
         product_code: addFormData.value.product_code,
         product_name_zh: addFormData.value.product_name_zh,
         product_name_en: addFormData.value.product_name_en,
@@ -610,8 +942,9 @@ const handleDeleteRows = () => {
         )
 
         // 所有删除请求都成功后，删除表格中的行
-        tableInstance.deleteRecords(selectedRowIndexes)
+        //tableInstance.deleteRecords(selectedRowIndexes)
         Message.success(`成功删除 ${selectedRowIndexes.length} 行数据`)
+        await fetchOrderDetail()
       } catch (error) {
         console.error('删除失败:', error)
         Message.error('删除失败：' + (error.message || '未知错误'))
@@ -620,26 +953,7 @@ const handleDeleteRows = () => {
   })
 }
 
-// 获取供应商列表
-const fetchSuppliers = async () => {
-  try {
-    const result = await supplyStore.searchSuppliers(searchKey.value);
-    supplierOptions.value = result.map(item => ({
-      label: item.name,
-      value: item.id  // value 存储供应商 ID
-    }));
-  } catch (error) {
-    Message.error('获取供应商列表失败');
-  }
-};
 
-// 修改搜索处理函数
-const handleSupplierSearch = async (searchValue) => {
-  searchKey.value = searchValue; // 保存搜索关键词
-  await fetchSuppliers(); // 调用搜索接口
-};
-
-// 在 script setup 中添加 rules 定义
 const rules = {
   product_code: [
     { required: true, message: '请输入产品编码' }
@@ -674,6 +988,100 @@ const nextSequence = computed(() => {
   return tableInstance.rowCount
 });
 
+// 预览相关的响应式变量
+const previewModalVisible = ref(false);
+const previewData = ref([]);
+
+// 处理预览确认
+const handlePreviewOk = async () => {
+  console.log('handlePreviewOk');
+  // try {
+  //   // 获取预览数据
+  //   const importData = previewData.value;
+    
+  //   if (!importData || importData.length === 0) {
+  //     Message.error('没有可导入的数据');
+  //     return;
+  //   }
+
+  //   // 批量构建提交数据
+  //   const submitDataList = importData.map(item => {
+  //     const total_price = item.quantity * item.unit_price;
+      
+  //     return {
+  //       purchase_order_id: route.params.id,
+  //       sequence: item.sequence,
+  //       product_code: item.product_code,
+  //       product_name_zh: item.product_name_zh,
+  //       product_name_en: item.product_name_en,
+  //       specification: item.specification,
+  //       quantity: item.quantity,
+  //       unit: item.unit,
+  //       unit_price: item.unit_price,
+  //       total_price: total_price,
+  //       remark: item.remark || ''
+  //     };
+  //   });
+
+  //   // 显示加载状态
+  //   const loading = Message.loading({
+  //     content: '正在导入数据...',
+  //     duration: 0
+  //   });
+
+  //   try {
+  //     // 批量创建采购项目
+  //     const responses = await Promise.all(
+  //       submitDataList.map(data => 
+  //         purchaseOrderItemStore.createPurchaseItem(data)
+  //       )
+  //     );
+
+  //     // 检查所有请求是否成功
+  //     const hasError = responses.some(res => res.code !== 200);
+      
+  //     if (hasError) {
+  //       throw new Error('部分数据导入失败');
+  //     }
+
+  //     // 刷新表格数据
+  //     await fetchOrderDetail();
+      
+  //     // 关闭预览窗口
+  //     previewModalVisible.value = false;
+  //     previewData.value = [];
+      
+  //     Message.success(`成功导入 ${submitDataList.length} 条数据`);
+  //   } finally {
+  //     // 关闭加载提示
+  //     loading.close();
+  //   }
+
+  // } catch (error) {
+  //   console.error('导入失败:', error);
+  //   Message.error('导入失败：' + (error.message || '未知错误'));
+  // }
+};
+
+// 处理预览取消
+const handlePreviewCancel = () => {
+  previewModalVisible.value = false;
+  previewData.value = [];
+};
+
+
+
+// // 添加统计数据计算
+// const totalStats = computed(() => {
+//   const items = purchaseOrderItemStore.items || [];
+//   return {
+//     totalItems: items.length,
+//     totalQuantity: items.reduce((sum, item) => sum + (Number(item.quantity) || 0), 0),
+//     totalAmount: items.reduce((sum, item) => {
+//       return sum + (Number(item.quantity) * Number(item.unit_price) || 0)
+//     }, 0)
+//   }
+// })
 </script>
 <style scoped>
 
@@ -721,6 +1129,17 @@ const nextSequence = computed(() => {
 
 .table-container::-webkit-scrollbar-thumb:hover {
   background: #a8a8a8;
+}
+
+.total-count {
+  width: 100%;
+  margin-top: 16px;
+}
+
+:deep(.arco-table) {
+  width: 100%;
+  max-width: 800px;
+  margin: 0 auto;
 }
 </style>
 

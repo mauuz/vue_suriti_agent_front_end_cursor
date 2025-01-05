@@ -35,6 +35,18 @@
             供应商管理
           </a-menu-item>
         </a-sub-menu>
+        <a-sub-menu key="0_5">
+          <template #title>
+            <icon-check-circle />
+            审批
+          </template>
+          <a-menu-item key="0_5_1">
+            待审批项目
+          </a-menu-item>
+          <a-menu-item key="0_5_2">
+            审批历史
+          </a-menu-item>
+        </a-sub-menu>
         <a-menu-item key="0_4">
           <icon-storage />
           库存
@@ -84,7 +96,8 @@ import {
   IconHome,
   IconCalendar,
   IconStorage,
-  IconFile
+  IconFile,
+  IconCheckCircle
 } from '@arco-design/web-vue/es/icon'
 
 const router = useRouter()
@@ -126,6 +139,12 @@ const onClickMenuItem = (key) => {
       break
     case '0_4':
       router.push('/inventory')
+      break
+    case '0_5_1':
+      router.push('/approval/pending')
+      break
+    case '0_5_2':
+      router.push('/approval/history')
       break
   }
 }

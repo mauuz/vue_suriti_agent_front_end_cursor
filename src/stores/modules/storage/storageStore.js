@@ -1,28 +1,113 @@
 import { defineStore } from 'pinia';
 import { ref } from 'vue';
-import axios from 'axios';
+import request from '@/utils/requests'
 
 export const useStorageStore = defineStore('storage', () => {
   // 状态 (State)
   const storageItems = ref([]);
   const currentItem = ref(null);
   const loading = ref(false);
+  const total_count = ref(0);
+  const currentPage = ref(1);
+  const pageSize = ref(10);
+  const searchKey = ref('');
+  const selectedRows = ref('');
 
   // 操作 (Actions)
   const getStorageList = async (params) => {
-    // 获取库存列表
+    loading.value = true;
+    try {
+      const response = await request({
+        url: '/storage/items',
+        method: 'GET',
+        params: {
+          page: params.page,
+          page_size: params.pageSize
+        }
+      });
+      storageItems.value = response.data.items;
+      total_count.value = response.data.total_count; // Assuming the API returns total count
+      currentPage.value = params.page;
+      pageSize.value = params.pageSize;
+    } catch (error) {
+      console.error('Failed to fetch storage list:', error);
+    } finally {
+      loading.value = false;
+    }
   };
 
-  const createStorageItem = async (itemData) => {
-    // 创建新的库存项
+  const createStorageItem = (itemData) => {
+    return new Promise(async (resolve, reject) => {
+      try {
+        const response = await request({
+          url: '/storage/',
+          method: 'POST',
+          data: itemData
+        });
+        resolve(response); // Resolve the promise with the response
+      } catch (error) {
+        console.error('Failed to create storage item:', error);
+        reject(error); // Reject with the server's error response
+        
+      }
+    });
   };
 
-  const updateStorageItem = async (itemId, itemData) => {
-    // 更新库存项
+  const updateStorageItem = (itemId, itemData) => {
+    return new Promise(async (resolve, reject) => {
+      try {
+        const response = await request({
+          url: `/storage/${itemId}`,
+          method: 'PUT',
+          data: itemData
+        });
+        resolve(response); // Resolve the promise with the response
+      } catch (error) {
+        console.error('Failed to update storage item:', error);
+        reject(error); // Reject with the server's error response
+      }
+    });
   };
 
-  const deleteStorageItem = async (itemId) => {
-    // 删除库存项
+  const deleteStorageItem = (itemId) => {
+    return new Promise(async (resolve, reject) => {
+      try {
+        const response = await request({
+          url: `/storage/${itemId}`,
+          method: 'DELETE'
+        });
+        resolve(response); // Resolve the promise with the response
+      } catch (error) {
+        console.error('Failed to delete storage item:', error);
+        reject(error); // Reject the promise with the error
+      }
+    });
+  };
+
+  const searchStorageItem = async (params) => {
+    try {
+      const { keyword, page, page_size, goods_id } = params;
+      let query = `page=${page}&page_size=${page_size}`;
+
+      if (keyword) {
+        query += `&keyword=${keyword}`;
+      } else if (goods_id) {
+        query += `&goods_id=${goods_id}`;
+      }
+
+      const response = await request({
+        url: `/storage?${query}`,
+        method: 'GET'
+      });
+      storageItems.value = response.data.items;
+      total_count.value = response.data.total_count; // Assuming the API returns total count
+      currentPage.value = params.page;
+      pageSize.value = params.page_size;
+      return response; // Return the response for further processing
+    } catch (error) {
+      console.error('Failed to search storage item:', error);
+      throw error; // Throw error for handling in calling function
+    }
   };
 
   const getStorageDetail = async (itemId) => {
@@ -51,6 +136,11 @@ export const useStorageStore = defineStore('storage', () => {
     storageItems,
     currentItem,
     loading,
+    total_count,
+    currentPage,
+    pageSize,
+    searchKey,
+    selectedRows,
 
     // 操作
     getStorageList,
@@ -60,6 +150,7 @@ export const useStorageStore = defineStore('storage', () => {
     getStorageDetail,
     checkInStorage,
     checkOutStorage,
+    searchStorageItem,
 
     // 计算属性
     lowStockItems,

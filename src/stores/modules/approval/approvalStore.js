@@ -23,10 +23,10 @@ export const useApprovalStore = defineStore('approval', () => {
     }
   };
 
-  const submitApproval = async (approvalData) => {
+  const submitBatchApproval = async (approvalData) => {
     try {
       loading.value = true;
-      const response = await request.post('/api/approvals', approvalData);
+      const response = await request.post('/batch-submit-purchase-items/', approvalData);
       return response.data;
     } catch (error) {
       console.error('提交审批失败:', error);
@@ -83,7 +83,7 @@ export const useApprovalStore = defineStore('approval', () => {
 
     // 操作
     getApprovalList,
-    submitApproval,
+    submitBatchApproval,
     approveRequest,
     getApprovalDetail,
 

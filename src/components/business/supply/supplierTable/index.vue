@@ -85,7 +85,7 @@
 </template>
 
 <script setup>
-import { onMounted, ref } from 'vue'
+import { ref } from 'vue'
 import { useSupplyStore } from '@/stores/modules/supply/supplyStore'
 import { Message } from '@arco-design/web-vue'
 const supplyStore = useSupplyStore()

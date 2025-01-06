@@ -1,9 +1,12 @@
 <template>
   <div class="inventory">
-    <inventory-tool-bar 
+    <div class="toolbar">
+      <inventory-tool-bar 
       @search="handleSearch"
       @refresh="handleDeleteRefresh"
     />
+    </div>
+
     <inventory-table
       :data="storageStore.storageItems"
       :loading="storageStore.loading"
@@ -25,7 +28,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue';
+import { ref, onMounted,onActivated } from 'vue';
 import InventoryToolBar from '@/components/business/inventory/inventoryToolBar/index.vue';
 import InventoryTable from '@/components/business/inventory/inventoryTable/index.vue';
 import { useStorageStore } from '@/stores/modules/storage/storageStore';
@@ -90,13 +93,21 @@ const handleSearch = async (value) => {
   await fetchSearchInventoryData({page:1});
 };
 
-onMounted(() => {
-  fetchInventoryData();
+// onActivated(async () => {
+//   console.log('activated inventory')
+//   await fetchInventoryData();
+// });
+onMounted(async () => {
+  console.log('onmounted inventory')
+  await fetchInventoryData();
 });
 </script>
 
 <style scoped>
 .inventory {
-  padding: 20px;
+  padding: 16px;
+}
+.toolbar {
+  margin-bottom: 16px;
 }
 </style> 

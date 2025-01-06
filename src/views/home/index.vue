@@ -7,7 +7,7 @@
       :collapsed="collapsed"
       @collapse="onCollapse"
     >
-      <div class="logo" >
+      <div class="logo">
         <img src="@/assets/logo.png" alt="logo" />
       </div>
       <a-menu
@@ -28,24 +28,16 @@
             <icon-file />
             采购
           </template>
-          <a-menu-item key="0_3_1">
-            采购单管理
-          </a-menu-item>
-          <a-menu-item key="0_3_2">
-            供应商管理
-          </a-menu-item>
+          <a-menu-item key="0_3_1">采购单管理</a-menu-item>
+          <a-menu-item key="0_3_2">供应商管理</a-menu-item>
         </a-sub-menu>
         <a-sub-menu key="0_5">
           <template #title>
             <icon-check-circle />
             审批
           </template>
-          <a-menu-item key="0_5_1">
-            待审批项目
-          </a-menu-item>
-          <a-menu-item key="0_5_2">
-            审批历史
-          </a-menu-item>
+          <a-menu-item key="0_5_1">待审批项目</a-menu-item>
+          <a-menu-item key="0_5_2">审批历史</a-menu-item>
         </a-sub-menu>
         <a-menu-item key="0_4">
           <icon-storage />
@@ -53,6 +45,7 @@
         </a-menu-item>
       </a-menu>
     </a-layout-sider>
+
     <a-layout>
       <a-layout style="padding: 0 24px">
         <a-breadcrumb :style="{ margin: '16px 0' }">
@@ -61,36 +54,47 @@
             <a-breadcrumb-item>{{ item.meta.title }}</a-breadcrumb-item>
           </template>
         </a-breadcrumb>
+
         <a-layout-content>
-          <a-tabs
-            type="card-gutter"
-            :editable="true"
-            @delete="handleDelete"
-            v-model:activeKey="activeKey"
-            class="full-height-tabs"
-          >
-            <a-tab-pane
-              v-for="tab in tabList"
-              :key="tab.key"
-              :title="tab.title"
-              :closable="tabList.length > 1"
+          <div class="content-container">
+            <!-- Tabs 导航 -->
+            <a-tabs
+              type="card-gutter"
+              :editable="true"
+              @delete="handleDelete"
+              v-model:activeKey="activeKey"
+              :hide-content="true"
+              class="tabs-nav"
             >
+              <a-tab-pane
+                v-for="tab in tabList"
+                :key="tab.key"
+                :title="tab.title"
+                :closable="tabList.length > 1"
+              />
+            </a-tabs>
+
+            <!-- 路由视图容器 -->
+            <div class="router-view-container">
               <router-view v-slot="{ Component }">
                 <keep-alive>
-                  <component :is="Component" />
+                  <component :is="Component" :key="route.fullPath" />
                 </keep-alive>
               </router-view>
-            </a-tab-pane>
-          </a-tabs>
+            </div>
+          </div>
         </a-layout-content>
-        <a-layout-footer>Suriti ©2002-2024 Created by Simon, Powered by John Ye</a-layout-footer>
+
+        <a-layout-footer>
+          Suriti ©2002-2024 Created by Simon, Powered by John Ye
+        </a-layout-footer>
       </a-layout>
     </a-layout>
   </a-layout>
 </template>
 
 <script setup>
-import { ref, watch, onMounted } from 'vue'
+import { ref, watch } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { 
   IconHome,
@@ -149,16 +153,15 @@ const onClickMenuItem = (key) => {
   }
 }
 
-// 初始化标签页列表
+// 标签页相关逻辑
 const tabList = ref([])
 const activeKey = ref('')
 
-// 添加初始化函数
+// 初始化标签页
 const initializeTabs = () => {
   const currentPath = route.path
   const currentTitle = route.meta.title || '新标签页'
   
-  // 如果当前路径不在标签列表中，添加它
   if (!tabList.value.some(tab => tab.key === currentPath)) {
     tabList.value.push({
       key: currentPath,
@@ -168,10 +171,32 @@ const initializeTabs = () => {
   activeKey.value = currentPath
 }
 
-// 在组件挂载时初始化
-onMounted(() => {
-  initializeTabs()
-})
+// 监听路由变化，自动添加标签
+watch(
+  () => route.path,
+  (newPath) => {
+    const exist = tabList.value.some(tab => tab.key === newPath)
+    if (!exist) {
+      tabList.value.push({
+        key: newPath,
+        title: route.meta.title || '新标签页'
+      })
+    }
+    activeKey.value = newPath
+  },
+  { immediate: true }
+)
+
+// 监听标签切换
+watch(
+  activeKey,
+  (newKey) => {
+    if (route.path !== newKey) {
+      router.push(newKey)
+    }
+  },
+  { flush: 'post' }
+)
 
 // 处理标签删除
 const handleDelete = (targetKey) => {
@@ -189,28 +214,6 @@ const handleDelete = (targetKey) => {
     }
   }
 }
-
-// 监听路由变化，自动添加标签
-watch(
-  () => route.path,
-  (newPath) => {
-    const exist = tabList.value.some(tab => tab.key === newPath)
-    if (!exist) {
-      tabList.value.push({
-        key: newPath,
-        title: route.meta.title || '新标签页'
-      })
-    }
-    activeKey.value = newPath
-  }
-)
-
-// 监听标签切换
-watch(activeKey, (newKey) => {
-  if (route.path !== newKey) {
-    router.push(newKey)
-  }
-})
 </script>
 
 <style scoped>
@@ -253,55 +256,39 @@ watch(activeKey, (newKey) => {
   border-top: 1px solid var(--color-border);
 }
 
+.content-container {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.tabs-nav {
+  flex-shrink: 0;
+  background: var(--color-bg-2);
+  padding: 8px 16px 0;
+}
+
+.router-view-container {
+  flex: 1;
+  overflow: auto;
+  padding: 16px;
+  background: var(--color-bg-2);
+}
+
 .layout-demo :deep(.arco-layout-content) {
   background: var(--color-bg-3);
   color: var(--color-text-2);
   min-height: 120px;
   height: 100%;
-}
-
-.layout-demo :deep(.arco-tabs) {
-  height: 100%;
-}
-
-.layout-demo :deep(.arco-tabs-content) {
-  padding: 16px;
+  display: flex;
+  flex-direction: column;
 }
 
 .layout-demo :deep(.arco-tabs-nav) {
   margin-bottom: 0;
-  padding: 8px 16px 0;
-  background: var(--color-bg-2);
 }
 
 .layout-demo :deep(.arco-tabs-nav-tab) {
   border-bottom: none;
-}
-
-.layout-demo :deep(.arco-layout-content) {
-  display: flex;
-  flex-direction: column;
-  height: 100%;
-}
-
-.layout-demo :deep(.full-height-tabs) {
-  display: flex;
-  flex-direction: column;
-  flex: 1;
-  height: 100%;
-}
-
-.layout-demo :deep(.full-height-tabs .arco-tabs-content) {
-  flex: 1;
-  overflow: auto;
-  height: 0; /* 这个是必要的，让 flex: 1 生效 */
-}
-
-.layout-demo :deep(.arco-tabs-nav) {
-  margin-bottom: 0;
-}
-
-.layout-demo :deep(.arco-tabs-pane) {
-  height: 100%;
 }
 </style>

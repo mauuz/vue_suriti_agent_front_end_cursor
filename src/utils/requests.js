@@ -1,10 +1,11 @@
 import axios from 'axios';
+import router from '@/router'; // Adjust the path to your router file
 
 // 创建一个 Axios 实例
 //baseURL: 'https://api.agent.jellon.store/api/v1/'
 const instance = axios.create({
-    baseURL: 'https://api.agent.jellon.store/api/v1/', // 请替换为你的基础URL
-    //baseURL: 'http://localhost:8000/api/v1/', // 请替换为你的基础URL
+    //baseURL: 'https://api.agent.jellon.store/api/v1/', // 请替换为你的基础URL
+    baseURL: 'http://localhost:8000/api/v1/', // 请替换为你的基础URL
     timeout: 18000, // 请求超时时间
 });
 
@@ -30,6 +31,10 @@ instance.interceptors.request.use(config => {
 instance.interceptors.response.use(response => {
     return response.data; // 直接返回数据
 }, error => {
+    if (error.response && error.response.status === 401) {
+        localStorage.removeItem('access_token'); // 删除 access_token
+        router.replace('/login'); // 使用 Vue Router replace 跳转到登录页面
+    }
     return Promise.reject(error);
 });
 

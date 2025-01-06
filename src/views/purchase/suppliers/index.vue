@@ -26,7 +26,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, onMounted ,onActivated} from 'vue'
 import { useSupplyStore } from '@/stores'
 import SupplierToolbar from '@/components/business/supply/supplierToolBar/index.vue'
 import SupplierTable from '@/components/business/supply/supplierTable/index.vue'
@@ -74,10 +74,13 @@ const onPageSizeChange = async (pageSize) => {
     console.error('每页条数切换失败:', error)
   }
 }
-
-// 初始化加载
-onMounted(() => {
-  fetchData()
+// onActivated(async () => {
+//   console.log('activated purchase-supply')
+//   await fetchData()
+// })
+onMounted(async () => {
+  console.log('onmounted purchase-supply')
+  await fetchData()
 })
 </script>
 

@@ -7,13 +7,26 @@ export const useApprovalStore = defineStore('approval', () => {
   const approvalList = ref([]);
   const currentApproval = ref(null);
   const loading = ref(false);
+  const totalCount = ref(0);
+  const currentPage = ref(1);
+  const totalPages = ref(1);
+  const pageSize = ref(10);
 
   // 操作 (Actions)
   const getApprovalList = async (params) => {
     try {
       loading.value = true;
-      const response = await request.get('/api/approvals', { params });
-      approvalList.value = response.data;
+      const response = await request.get('/approval/pending', {
+        params: {
+          page: params.page ,
+          page_size: params.pageSize
+        }
+      });
+      approvalList.value = response.data.items;
+      totalPages.value = response.data.total_pages;
+      totalCount.value = response.data.total_count;
+      currentPage.value = params.page;
+      pageSize.value = params.pageSize;
       return response.data;
     } catch (error) {
       console.error('获取审批列表失败:', error);
@@ -36,12 +49,12 @@ export const useApprovalStore = defineStore('approval', () => {
     }
   };
 
-  const approveRequest = async (approvalId, action, comment) => {
+  const approveItem = async (purchase_item_id, status,approval_comment) => {
     try {
       loading.value = true;
-      const response = await request.put(`/api/approvals/${approvalId}`, {
-        action,
-        comment
+      const response = await request.post(`/approval/${purchase_item_id}`, {
+        status:status,
+        approval_comment: approval_comment
       });
       return response.data;
     } catch (error) {
@@ -52,18 +65,22 @@ export const useApprovalStore = defineStore('approval', () => {
     }
   };
 
-  const getApprovalDetail = async (approvalId) => {
-    try {
+  const getApprovalPendingItems = async (purchaseId) => {
+    return new Promise((resolve, reject) => {
       loading.value = true;
-      const response = await request.get(`/api/approvals/${approvalId}`);
-      currentApproval.value = response.data;
-      return response.data;
-    } catch (error) {
-      console.error('获取审批详情失败:', error);
-      throw error;
-    } finally {
-      loading.value = false;
-    }
+      request
+        .get(`/approval/${purchaseId}`)
+        .then((response) => {
+          resolve(response.data);
+        })
+        .catch((error) => {
+          console.error('获取审批详情失败:', error);
+          reject(error);
+        })
+        .finally(() => {
+          loading.value = false;
+        });
+    });
   };
 
   // 计算属性 (Getters)
@@ -75,17 +92,23 @@ export const useApprovalStore = defineStore('approval', () => {
     return approvalList.value.filter(item => ['approved', 'rejected'].includes(item.status));
   };
 
+
+
   return {
     // 状态
     approvalList,
     currentApproval,
     loading,
+    totalCount,
+    currentPage,
+    totalPages,
+    pageSize,
 
     // 操作
     getApprovalList,
     submitBatchApproval,
-    approveRequest,
-    getApprovalDetail,
+    approveItem,
+    getApprovalPendingItems,
 
     // 计算属性
     pendingApprovals,

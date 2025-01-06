@@ -467,7 +467,13 @@ const columns = [
     title: '数量',
     minWidth: 100,
     width: 100,
-    editor: 'input-editor'
+    editor: 'input-editor',
+    aggregation: {
+        aggregationType: VTable.TYPES.AggregationType.SUM,
+        formatFun(value) {
+            return value ? `${Number(value).toFixed(8)}` : '';
+        }
+    }
   },
   {
     field: 'unit',
@@ -481,7 +487,6 @@ const columns = [
     title: '单价',
     minWidth: 120,
     width: 120,
-    formatter: (value) => Number(value).toFixed(2),
     editor: 'input-editor'
   },
   {
@@ -489,8 +494,13 @@ const columns = [
     title: '总价',
     minWidth: 120,
     width: 120,
-    formatter: (value) => Number(value).toFixed(2),
-    editor: 'input-editor'
+    editor: 'input-editor',
+    aggregation: {
+        aggregationType: VTable.TYPES.AggregationType.SUM,
+        formatFun(value) {
+            return value ? `${Number(value).toFixed(8)}` : '';
+        }
+    }
   },
   {
     field: 'pics',
@@ -505,7 +515,11 @@ const columns = [
     icon: ['upload', 'view'],
     cellStyle: () => ({
       textAlign: 'center'
-    })
+    }),
+    aggregation: {
+      aggregationType: VTable.TYPES.AggregationType.NONE,
+      formatFun: () => ''  // 返回空字符串，使最后一行不显示任何内容
+    }
   },
   {
     field: 'creator',
@@ -811,9 +825,9 @@ function getPurchaseItemId(row){
 }
 
 // 确保在组件挂载后DOM元素已经准备好
-onMounted(() => {
-  nextTick(() => {
-    fetchOrderDetail();
+onMounted(async() => {
+  nextTick(async () => {
+    await fetchOrderDetail();
   });
 });
 

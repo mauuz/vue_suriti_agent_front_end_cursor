@@ -26,7 +26,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, onMounted,onActivated } from 'vue'
 import { usePurchaseOrderStore } from '@/stores'
 import PurchaseToolbar from '@/components/business/purchase/purchaseToolBar/index.vue'
 import PurchaseOrderTable from '@/components/business/purchase/purchaseOrderTable/index.vue'
@@ -77,9 +77,18 @@ const onPageSizeChange = async (pageSize) => {
 
 
 // 初始化加载
-onMounted(() => {
-  fetchData()
+// onMounted(async () => {
+//   console.log('purchase-orders')
+//   await fetchData()
+// })
+onMounted(async () => {
+  console.log('onmounted purchase-orders')
+  await fetchData()
 })
+// onActivated(async () => {
+//   console.log('activated purchase-orders')
+//   await fetchData()
+// })
 </script>
 
 <style scoped>

@@ -12,6 +12,12 @@ export const useApprovalStore = defineStore('approval', () => {
   const totalPages = ref(1);
   const pageSize = ref(10);
 
+  const approvalHistoryList = ref([]);
+  const approvalHistoryTotalCount = ref(0);
+  const approvalHistoryCurrentPage = ref(1);
+  const approvalHistoryPageSize = ref(10);
+  
+
   // 操作 (Actions)
   const getApprovalList = async (params) => {
     try {
@@ -83,6 +89,28 @@ export const useApprovalStore = defineStore('approval', () => {
     });
   };
 
+  const getAllApprovalHistory = async (params) => {
+    try {
+      loading.value = true;
+      const response = await request.get('/approval-history/list', {
+        params: {
+          page: params.page,
+          page_size: params.pageSize
+        }
+      });
+      approvalHistoryList.value = response.data.items;
+      approvalHistoryTotalCount.value = response.data.total_count;
+      approvalHistoryCurrentPage.value = params.page;
+      approvalHistoryPageSize.value = params.pageSize;
+      return response.data;
+    } catch (error) {
+      console.error('获取审批历史失败:', error);
+      throw error;
+    } finally {
+      loading.value = false;
+    }
+  };
+
   // 计算属性 (Getters)
   const pendingApprovals = () => {
     return approvalList.value.filter(item => item.status === 'pending');
@@ -109,9 +137,14 @@ export const useApprovalStore = defineStore('approval', () => {
     submitBatchApproval,
     approveItem,
     getApprovalPendingItems,
+    getAllApprovalHistory,
 
     // 计算属性
     pendingApprovals,
-    completedApprovals
+    completedApprovals,
+    approvalHistoryList,
+    approvalHistoryTotalCount,
+    approvalHistoryCurrentPage,
+    approvalHistoryPageSize
   };
 });

@@ -10,20 +10,7 @@
       @order-confirm="handleOrderConfirm"
       />
     </div>
-    <!-- <div class="total-count">
-    <a-table :data="[totalStats]" :bordered="true" :pagination="false">
-      <template #columns>
-        <a-table-column title="总项目数" data-index="totalItems" align="center" />
-        <a-table-column title="总数量" data-index="totalQuantity" align="center" />
-        <a-table-column 
-          title="总金额" 
-          data-index="totalAmount" 
-          align="center"
-          :formatter="(value) => Number(value).toFixed(2)"
-        />
-      </template>
-    </a-table>
-  </div> -->
+   
     <div class="purchase-item-detail-container">
         <div ref="tableContainer" class="table-container"></div>
     </div>
@@ -114,8 +101,7 @@
           :step="0.00000001"
         />
       </a-form-item>
-
-
+      
       <a-form-item field="remark" label="备注">
         <a-textarea v-model="addFormData.remark" placeholder="请输入备注" />
       </a-form-item>
@@ -146,10 +132,18 @@
     @cancel="handlePreviewCancel"
     @refresh-data="fetchOrderDetail"
   />
+  
+  <approval-submit-table
+    v-model:visible="approvalModalVisible"
+    :data = "approvalData"
+    @submit="handleApprovalOk"
+    @cancel="handleApprovalCancel"
+  />
+  
 </template>
 
 <script setup>
-import { ref, onMounted, onUnmounted, nextTick, h,computed } from 'vue';
+import { ref, onMounted, onUnmounted, nextTick, h,computed, reactive } from 'vue';
 import { useRoute } from 'vue-router';
 import { usePurchaseItemStore, useSupplyStore,useApprovalStore} from '@/stores';
 import * as VTable from '@visactor/vtable';
@@ -160,12 +154,10 @@ import * as ExcelJS from 'exceljs';
 import * as XLSX from 'xlsx';
 import ExcelPreviewTable from '@/components/business/purchase/excelPreviewTable/index.vue';
 import { DateInputEditor, InputEditor, ListEditor, TextAreaEditor } from '@visactor/vtable-editors';
+import ApprovalSubmitTable from '@/components/business/approval/approvalSubmitTable/index.vue';
 
-
-const approvalStore = useApprovalStore();
 const route = useRoute();
 const purchaseOrderItemStore = usePurchaseItemStore();
-const supplyStore = useSupplyStore();
 const tableContainer = ref(null);
 let tableInstance = null;
 const dialogVisible = ref(false)
@@ -185,9 +177,9 @@ const addFormData = ref({
   remark: ''
 })
 const supplierOptions = ref([])
-const searchKey = ref('')
 const excelAddInputRef = ref(null);
 const excelReplaceInputRef = ref(null);
+const approvalData = reactive([])
 
 const showUploadDialog = (purchaseItemId) => {
   currentPurchaseItemId.value = purchaseItemId
@@ -328,6 +320,15 @@ const handleExcelAddFileChange = async (event) => {
     event.target.value = '';
   }
 };
+// submit approvel
+const handleApprovalOk = async()=>{
+  //
+
+}
+
+const handleApprovalCancel = async()=>{
+  
+}
 
 // 处理文件选择变化 - 覆盖导入
 const handleExcelReplaceFileChange = async (event) => {
@@ -360,31 +361,8 @@ const handleUploadSuccess = (files) => {
   // 这里可以添加上传成功后的刷新逻辑
 }
 
-// 提交审批
-const handleSubmitApproval = async() => {
-  console.log('提交审批');
-  const purchaseItemIdIndex = columns.findIndex(col => col.field === 'purchase_item_id');
 
-  const data = tableInstance.getAllBodyCells();
-  console.log('data:', data);
 
-  // 创建一个新的列表来存储 goods_id
-  const goodsIdList = [];
-
-  // 循环遍历 data 并提取 goods_id
-  data.forEach(row => {
-    const goodsId = row[purchaseItemIdIndex]?.dataValue; // 获取 goods_id 的 dataValue
-    if (goodsId !== undefined) {
-      goodsIdList.push(goodsId);
-    }
-  });
-
-  
-  await approvalStore.submitBatchApproval({
-    purchase_item_id_list: goodsIdList,
-    applicant_reason: 'test'
-  });
-}
 const handleOrderConfirm = async() => {
   console.log('确认下单')
 }
@@ -460,7 +438,13 @@ const columns = [
     title: '规格',
     minWidth: 150,
     width: 150,
-    editor: 'input-editor'
+    editor: 'input-editor',
+    aggregation: {
+        aggregationType: VTable.TYPES.AggregationType.SUM,
+        formatFun(value) {
+            return "总数:";
+        }
+    }
   },
   {
     field: 'quantity',
@@ -487,13 +471,22 @@ const columns = [
     title: '单价',
     minWidth: 120,
     width: 120,
-    editor: 'input-editor'
+    editor: 'input-editor',
+    aggregation: {
+        aggregationType: VTable.TYPES.AggregationType.SUM,
+        formatFun(value) {
+            return "总价:";
+        }
+    }
   },
   {
     field: 'total_price',
     title: '总价',
     minWidth: 120,
     width: 120,
+    // fieldFormat(data, col, row, table) {
+    //   return row - 1;
+    // },
     editor: 'input-editor',
     aggregation: {
         aggregationType: VTable.TYPES.AggregationType.SUM,
@@ -512,14 +505,15 @@ const columns = [
       fontWeight: 'bold',
       backgroundColor: '#f2f3f5'
     },
-    icon: ['upload', 'view'],
+    icon: ({ row, table }) => {
+      // 检查是否是最后一行
+      const isLastRow = row === table.rowCount-1;
+      // 如果是最后一行返回空数组，否则返回原有的图标
+      return isLastRow ? [] : ['upload', 'view'];
+    },
     cellStyle: () => ({
       textAlign: 'center'
     }),
-    aggregation: {
-      aggregationType: VTable.TYPES.AggregationType.NONE,
-      formatFun: () => ''  // 返回空字符串，使最后一行不显示任何内容
-    }
   },
   {
     field: 'creator',
@@ -545,7 +539,7 @@ const columns = [
     }
   },
   {
-      field: 'approval_remark',
+      field: 'approval_comment',
       title: '审批意见',
       minWidth: 150,
       width: 150,
@@ -610,8 +604,6 @@ const initTable = (data) => {
     container: tableContainer.value,
     columns,
     records: data.map(({ pics, ...rest }) => rest),
-    width: '100%',
-    height: 2000,
     showFrozenIcon: true,
     defaultHeaderRowHeight: 35,
     defaultRowHeight: 30,
@@ -633,6 +625,10 @@ const initTable = (data) => {
         backgroundColor: '#f2f3f5',
         fontWeight: 'bold',
       },
+      bottomFrozenStyle: {
+      bgColor: '#f2f3f5',
+      borderLineWidth: [6, 0, 1, 0],
+    },
       bodyStyle: {
         hover: {
           backgroundColor: '#f2f3f5',
@@ -641,15 +637,25 @@ const initTable = (data) => {
           padding: [8, 12]
         }
       }
+    },
+    bottomFrozenRowCount: 1,
+    fieldFormat(record){
+      console.log('record:', record,123123);
+    },
+    checkboxColumn: {
+      checkAll: true,  // 是否显示全选框
+      width: 40,  // 复选框列宽度
+    },
+    // 添加选择变化的事件监听
+    onSelectedChange: (selectedRows) => {
+      console.log('Selected rows:', selectedRows);
+      // 这里可以处理选中行变化的逻辑
     }
   });
 
   // 监听单元格值变化,并同步
   tableInstance.on('change_cell_value', async(args) => {
     const purchaseItemIdIndex = columns.findIndex(col => col.field === 'purchase_item_id');
-    const unitPriceIndex = columns.findIndex(col => col.field === 'unit_price');
-    const totalPriceIndex = columns.findIndex(col => col.field === 'total_price');
-    const quantityIndex = columns.findIndex(col => col.field === 'quantity');
     
     // 获取当前行的采购项目ID
     const purchaseItemId = tableInstance.getCellValue(purchaseItemIdIndex, args.row);
@@ -800,7 +806,8 @@ const fetchOrderDetail = async () => {
         approval_status: item.approval_status.status === null ? '未提交' : 
               item.approval_status.status === 0 ? '正在审核' :
               item.approval_status.status === 1 ? '通过' :
-              item.approval_status.status === 2 ? '驳回' : '未知状态'
+              item.approval_status.status === 2 ? '驳回' : '未知状态',
+        approval_comment: item.approval_status.approval_comment || '-',
       }));
 
       console.log('Formatted Data:', formattedData);
@@ -1096,6 +1103,47 @@ const handlePreviewCancel = () => {
 //     }, 0)
 //   }
 // })
+
+const approvalModalVisible = ref(false);
+const approvalForm = ref({
+  reason: ''
+});
+
+// 预览表格的列配置
+const previewColumns = [
+  { title: '序号', dataIndex: 'sequence', width: 80 },
+  { title: '产品编码', dataIndex: 'product_code', width: 100 },
+  { title: '产品名称(英)', dataIndex: 'product_name_en', width: 200 },
+  { title: '规格', dataIndex: 'specification', width: 150 },
+  { title: '产品名称(中)', dataIndex: 'product_name_zh', width: 200 },
+  { title: '数量', dataIndex: 'quantity', width: 100 },
+  { title: '单位', dataIndex: 'unit', width: 80 },
+  { title: '单价', dataIndex: 'unit_price', width: 120 },
+  { title: '总价', dataIndex: 'total_price', width: 120 }
+];
+
+// 行选择配置
+const rowSelection = {
+  type: 'checkbox',
+  showCheckedAll: true,
+  onChange: (selectedRowKeys, selectedRows) => {
+    console.log('选中的行keys:', selectedRowKeys);
+    console.log('选中的行数据:', selectedRows);
+  }
+};
+
+// 打开审批弹窗
+const handleSubmitApproval = () => {
+  //
+  
+  approvalModalVisible.value = true;
+};
+
+// 提交审批
+const submitApproval = () => {
+  approvalModalVisible.value = false;
+  approvalForm.value.reason = '';
+};
 </script>
 <style scoped>
 
@@ -1116,9 +1164,9 @@ const handlePreviewCancel = () => {
 }
 
 .table-container {
-  width: 100%;
-  height: 600px;
-  overflow: auto;
+  /* width: 100%;*/
+  height: 700px; 
+  /* overflow: auto; */
   -webkit-overflow-scrolling: touch;
 }
 
@@ -1154,6 +1202,21 @@ const handlePreviewCancel = () => {
   width: 100%;
   max-width: 800px;
   margin: 0 auto;
+}
+
+.approval-preview {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  width: 100%;
+}
+
+.full-width-table {
+  width: 100%;
+}
+
+.approval-reason {
+  margin-top: 16px;
 }
 </style>
 

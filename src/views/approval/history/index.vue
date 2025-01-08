@@ -1,11 +1,11 @@
 <template>
   <div class="page-title">
-        <h1>审批历史</h1>
+      <ApprovalHistoryTable />
   </div>
 </template>
 
 <script setup>
-
+import ApprovalHistoryTable from '@/components/business/approval/approvalHistoryTable/index.vue';
 </script>
 
 <style scoped>

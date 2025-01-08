@@ -29,7 +29,7 @@
         模板下载
       </a-button>
 
-      <a-button type="dashed" @click="handleSubmitBatchApproval">
+      <a-button type="dashed" @click="handleSubmitApproval">
         <template #icon>
           <icon-launch />
         </template>
@@ -53,12 +53,12 @@ import { Message } from '@arco-design/web-vue'
 import { usePurchaseItemStore } from '@/stores/modules/purchase/purchaseItemStore'
 import ExcelJS from 'exceljs'
 import { useRoute } from 'vue-router'
+import { ref } from 'vue';
 
 
 
 const emit = defineEmits(['add-row', 'delete-rows', 'excel-add', 'excel-replace', 'refresh-data','submit-approval','order-confirm'])
 
-const purchaseItemStore = usePurchaseItemStore()
 
 // 获取路由实例
 const route = useRoute()
@@ -77,13 +77,11 @@ const handleDeleteRows = () => {
 const handleExcelAdd = () => {
   emit('excel-add')
 }
-const handleSubmitBatchApproval = () => {
-  emit('submit-approval')
-}
 
-// 确认下单
+
+
 const handleSubmitApproval = () => {
-  emit('order-confirm')
+  emit('submit-approval')
 }
 
 // 下载excel 模板

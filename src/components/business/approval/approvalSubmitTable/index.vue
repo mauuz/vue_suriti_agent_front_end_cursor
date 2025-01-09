@@ -14,10 +14,21 @@
         :columns="columns" 
         :data="data" 
         :row-selection="rowSelection"
-        v-model:selectedKeys="selectedKeys"
+         v-model:selectedKeys="selectedKeys"
         :virtual-list-props="{ height: 400 }"
         :pagination="false"
         :scroll="{ x: 1200 }"
+        @selection-change ="selecOnChange"
+        rowKey="purchase_item_id"
+      />
+    </div>
+
+    <div style="margin-top: 16px;">
+      <a-textarea
+        v-model="applicationReason"
+        placeholder="请输入申请的原因"
+        rows="4"
+        style="width: 100%;"
       />
     </div>
 
@@ -38,12 +49,8 @@
 </template>
 
 <script setup>
-import { ref, defineEmits, onMounted } from 'vue';
+import { ref, defineEmits } from 'vue';
 import { Message } from '@arco-design/web-vue';
-import { useRoute } from 'vue-router';
-import { usePurchaseItemStore } from '@/stores';
-
-const router = useRoute();
 const props = defineProps({
   visible: {
     type: Boolean,
@@ -56,7 +63,8 @@ const props = defineProps({
 });
 const emit = defineEmits(['update:visible', 'submit', 'cancel']);
 const selectedKeys = ref([]);
- 
+const applicationReason = ref('');
+
 const columns = [
 {
     title: '序号',
@@ -112,12 +120,12 @@ const rowSelection = {
   type: 'checkbox',
   showCheckedAll: true,
   onlyCurrent: true,
-  onChange: (selectedRowKeys, selectedRows) => {
-    selectedKeys.value = selectedRowKeys;
-    console.log('选中的行keys:', selectedRowKeys);
-    console.log('选中的行数据:', selectedRows);
-  }
+  
 };
+
+const selecOnChange = (selectedRowKeys) => {
+    selectedKeys.value = selectedRowKeys;
+}
 
 const handleOk = ()=>{
 
@@ -129,8 +137,13 @@ const handleSubmit = () => {
     return;
   }
 
-  console.log(selectedKeys)
-  emit('submit', selectedKeys);
+  if (!applicationReason.value.trim()) {
+    Message.warning('请输入申请的原因');
+    return;
+  }
+
+  console.log(selectedKeys.value, applicationReason.value);
+  emit('submit', { selectedKeys: selectedKeys.value, reason: applicationReason.value });
   emit('update:visible', false);
 };
 

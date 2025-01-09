@@ -155,7 +155,7 @@ import * as XLSX from 'xlsx';
 import ExcelPreviewTable from '@/components/business/purchase/excelPreviewTable/index.vue';
 import { DateInputEditor, InputEditor, ListEditor, TextAreaEditor } from '@visactor/vtable-editors';
 import ApprovalSubmitTable from '@/components/business/approval/approvalSubmitTable/index.vue';
-
+const approvalStore = useApprovalStore();
 const route = useRoute();
 const purchaseOrderItemStore = usePurchaseItemStore();
 const tableContainer = ref(null);
@@ -179,7 +179,7 @@ const addFormData = ref({
 const supplierOptions = ref([])
 const excelAddInputRef = ref(null);
 const excelReplaceInputRef = ref(null);
-const approvalData = reactive([])
+const approvalData = ref([])
 
 const showUploadDialog = (purchaseItemId) => {
   currentPurchaseItemId.value = purchaseItemId
@@ -320,11 +320,31 @@ const handleExcelAddFileChange = async (event) => {
     event.target.value = '';
   }
 };
-// submit approvel
-const handleApprovalOk = async()=>{
-  //
 
-}
+// submit approval
+const handleApprovalOk = async (params) => {
+  try {
+    // Extract selected keys and reason from params
+    const { selectedKeys, reason } = params;
+
+    // Construct the payload
+    const payload = {
+      purchase_item_id_list: selectedKeys,
+      applicant_reason: reason
+    };
+
+    // Submit the approval request
+    await approvalStore.submitBatchApproval(payload);
+
+    // Provide success feedback to the user
+    Message.success('审批提交成功');
+    await fetchOrderDetail();
+  } catch (error) {
+    console.error('审批提交失败:', error);
+    // Provide error feedback to the user
+    Message.error('审批提交失败：' + (error.message || '未知错误'));
+  }
+};
 
 const handleApprovalCancel = async()=>{
   
@@ -593,7 +613,6 @@ const columns = [
   }
 ];
 
-
 // 初始化表格
 const initTable = (data) => {
   if (tableInstance) {
@@ -780,7 +799,6 @@ const initTable = (data) => {
   tableInstance.on(DBLCLICK_CELL, (args) => {
     if (args.title === '产品图片') {
       console.log('Double clicked pics cell:', args);
-
     }
   });
 };
@@ -974,7 +992,6 @@ const handleDeleteRows = () => {
   })
 }
 
-
 const rules = {
   product_code: [
     { required: true, message: '请输入产品编码' }
@@ -1004,7 +1021,6 @@ const rules = {
   ]
 }
 
-
 const nextSequence = computed(() => {
   return tableInstance.rowCount
 });
@@ -1016,72 +1032,6 @@ const previewData = ref([]);
 // 处理预览确认
 const handlePreviewOk = async () => {
   console.log('handlePreviewOk');
-  // try {
-  //   // 获取预览数据
-  //   const importData = previewData.value;
-    
-  //   if (!importData || importData.length === 0) {
-  //     Message.error('没有可导入的数据');
-  //     return;
-  //   }
-
-  //   // 批量构建提交数据
-  //   const submitDataList = importData.map(item => {
-  //     const total_price = item.quantity * item.unit_price;
-      
-  //     return {
-  //       purchase_order_id: route.params.id,
-  //       sequence: item.sequence,
-  //       product_code: item.product_code,
-  //       product_name_zh: item.product_name_zh,
-  //       product_name_en: item.product_name_en,
-  //       specification: item.specification,
-  //       quantity: item.quantity,
-  //       unit: item.unit,
-  //       unit_price: item.unit_price,
-  //       total_price: total_price,
-  //       remark: item.remark || ''
-  //     };
-  //   });
-
-  //   // 显示加载状态
-  //   const loading = Message.loading({
-  //     content: '正在导入数据...',
-  //     duration: 0
-  //   });
-
-  //   try {
-  //     // 批量创建采购项目
-  //     const responses = await Promise.all(
-  //       submitDataList.map(data => 
-  //         purchaseOrderItemStore.createPurchaseItem(data)
-  //       )
-  //     );
-
-  //     // 检查所有请求是否成功
-  //     const hasError = responses.some(res => res.code !== 200);
-      
-  //     if (hasError) {
-  //       throw new Error('部分数据导入失败');
-  //     }
-
-  //     // 刷新表格数据
-  //     await fetchOrderDetail();
-      
-  //     // 关闭预览窗口
-  //     previewModalVisible.value = false;
-  //     previewData.value = [];
-      
-  //     Message.success(`成功导入 ${submitDataList.length} 条数据`);
-  //   } finally {
-  //     // 关闭加载提示
-  //     loading.close();
-  //   }
-
-  // } catch (error) {
-  //   console.error('导入失败:', error);
-  //   Message.error('导入失败：' + (error.message || '未知错误'));
-  // }
 };
 
 // 处理预览取消
@@ -1090,53 +1040,39 @@ const handlePreviewCancel = () => {
   previewData.value = [];
 };
 
-
-
-// // 添加统计数据计算
-// const totalStats = computed(() => {
-//   const items = purchaseOrderItemStore.items || [];
-//   return {
-//     totalItems: items.length,
-//     totalQuantity: items.reduce((sum, item) => sum + (Number(item.quantity) || 0), 0),
-//     totalAmount: items.reduce((sum, item) => {
-//       return sum + (Number(item.quantity) * Number(item.unit_price) || 0)
-//     }, 0)
-//   }
-// })
-
 const approvalModalVisible = ref(false);
 const approvalForm = ref({
   reason: ''
 });
 
-// 预览表格的列配置
-const previewColumns = [
-  { title: '序号', dataIndex: 'sequence', width: 80 },
-  { title: '产品编码', dataIndex: 'product_code', width: 100 },
-  { title: '产品名称(英)', dataIndex: 'product_name_en', width: 200 },
-  { title: '规格', dataIndex: 'specification', width: 150 },
-  { title: '产品名称(中)', dataIndex: 'product_name_zh', width: 200 },
-  { title: '数量', dataIndex: 'quantity', width: 100 },
-  { title: '单位', dataIndex: 'unit', width: 80 },
-  { title: '单价', dataIndex: 'unit_price', width: 120 },
-  { title: '总价', dataIndex: 'total_price', width: 120 }
-];
 
-// 行选择配置
-const rowSelection = {
-  type: 'checkbox',
-  showCheckedAll: true,
-  onChange: (selectedRowKeys, selectedRows) => {
-    console.log('选中的行keys:', selectedRowKeys);
-    console.log('选中的行数据:', selectedRows);
-  }
-};
+
 
 // 打开审批弹窗
-const handleSubmitApproval = () => {
-  //
-  
-  approvalModalVisible.value = true;
+const handleSubmitApproval = async () => {
+  try {
+    const orderId = route.params.id;
+    const response = await purchaseOrderItemStore.getPurchaseItems(orderId);
+
+    if (response.code === 200 && Array.isArray(response.data)) {
+      // Filter items where approval_status.status is not equal to 1
+      approvalData.value = response.data.filter(item => 
+        item.approval_status.status === null || item.approval_status.status === 2
+      );
+      
+      // Open the approval modal if there are items to approve
+      if (approvalData.value.length > 0) {
+        approvalModalVisible.value = true;
+      } else {
+        Message.info('没有可提交审批的项目');
+      }
+    } else {
+      throw new Error('Invalid data format');
+    }
+  } catch (error) {
+    Message.error('获取审批数据失败');
+    console.error('获取审批数据失败:', error);
+  }
 };
 
 // 提交审批

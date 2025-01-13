@@ -1,5 +1,6 @@
 import { createRouter, createWebHashHistory } from 'vue-router'
 
+
 const routes = [
   {
     path: '/login',
@@ -63,8 +64,33 @@ const routes = [
       {
         path: 'inventory',
         name: 'Inventory',
-        component: () => import('@/views/inventory/index.vue'),
-        meta: { title: '库存' }
+        meta: { title: '库存' },
+        children: [
+          {
+            path: '',
+            name: 'InventoryManagement',
+            component: () => import('@/views/inventory/management/index.vue'),
+            meta: { title: '库存管理' }
+          },
+          {
+            path: 'receipt',
+            name: 'receiptManagement',
+            component: () => import('@/views/inventory/receipt/index.vue'),
+            meta: { title: '盘点管理' }
+          },
+          {
+            path: 'receipt/:id',
+            name: 'ReceiptDetail',
+            component: () => import('@/views/inventory/receiptDetail/index.vue'),
+            meta: { 
+              title: '收货单详情',
+              hideInMenu: true 
+            },
+            beforeEnter: (to) => {
+              to.meta.title = `收货单详情 ${to.params.id}`;
+            }
+          }
+        ]
       },
       {
         path: 'approval',

@@ -39,10 +39,18 @@
           <a-menu-item key="0_5_1">待审批项目</a-menu-item>
           <a-menu-item key="0_5_2">审批历史</a-menu-item>
         </a-sub-menu>
-        <a-menu-item key="0_4">
-          <icon-storage />
-          库存
-        </a-menu-item>
+        <a-sub-menu key="0_4">
+          <template #title>
+            <icon-storage />
+            库存
+          </template>
+          <a-menu-item key="0_4_1">
+            库存管理
+          </a-menu-item>
+          <a-menu-item key="0_4_2">
+            盘点管理
+          </a-menu-item>
+        </a-sub-menu>
       </a-menu>
     </a-layout-sider>
 
@@ -141,14 +149,17 @@ const onClickMenuItem = (key) => {
     case '0_3_2':
       router.push('/purchase/suppliers')
       break
-    case '0_4':
-      router.push('/inventory')
-      break
     case '0_5_1':
       router.push('/approval/pending')
       break
     case '0_5_2':
       router.push('/approval/history')
+      break
+    case '0_4_1':
+      router.push('/inventory')
+      break
+    case '0_4_2':
+      router.push('/inventory/receipt')
       break
   }
 }

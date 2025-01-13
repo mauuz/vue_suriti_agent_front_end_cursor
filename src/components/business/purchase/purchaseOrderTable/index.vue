@@ -161,6 +161,12 @@ const columns = [
     width: 100,
   },
   {
+    title: '审批状态',
+    dataIndex: 'approvalStatus',
+    width: 100,
+    slotName: 'approvalStatus'
+  },
+  {
     title: '下单状态',
     dataIndex: 'orderStatus',
     width: 100,
@@ -171,12 +177,6 @@ const columns = [
     dataIndex: 'receiveStatus',
     width: 100,
     slotName: 'receiveStatus'
-  },
-  {
-    title: '审批状态',
-    dataIndex: 'approvalStatus',
-    width: 100,
-    slotName: 'approvalStatus'
   },
   {
     title: '操作员',

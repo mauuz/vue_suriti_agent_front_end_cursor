@@ -8,11 +8,17 @@
       @excel-replace="handleExcelReplace"
       @submit-approval="handleSubmitApproval"
       @order-confirm="handleOrderConfirm"
+      @save-postage="handleSavePostage"
       />
     </div>
-   
     <div class="purchase-item-detail-container">
         <div ref="tableContainer" class="table-container"></div>
+    </div>
+    <!-- Overview Section -->
+    <div class="overview-section">
+      <div class="overview-item">总共: <span> {{ overViewData.totalItems }}</span> 项</div>
+      <div class="overview-item">总价: <span> {{ overViewData.totalPrice }}</span> 元</div>
+      <div class="overview-item">含邮费总价: <span> {{ overViewData.totalPriceWithShipping }}</span> 元</div>
     </div>
   </div>
   <upload-image-dialog
@@ -22,7 +28,6 @@
       title="上传图片"
       @upload-success="handleUploadSuccess"
   />
-
   <a-modal
     v-model:visible="addModalVisible"
     title="添加采购项目"
@@ -139,13 +144,22 @@
     @submit="handleApprovalOk"
     @cancel="handleApprovalCancel"
   />
-  
+
+
+  <ConfirmOrderTable
+    v-model:visible="confirmOrderModalVisible"
+    :data="confirmOrderData"
+    @submit="handleConfirmOrderOk"
+    @cancel="handleConfirmOrderCancel"
+  />
+
+
 </template>
 
 <script setup>
 import { ref, onMounted, onUnmounted, nextTick, h,computed, reactive } from 'vue';
 import { useRoute } from 'vue-router';
-import { usePurchaseItemStore, useSupplyStore,useApprovalStore} from '@/stores';
+import { usePurchaseItemStore, useSupplyStore,useApprovalStore,useStorageStore,usePurchaseOrderStore} from '@/stores';
 import * as VTable from '@visactor/vtable';
 import { Message, Modal, Image, ImagePreviewGroup } from '@arco-design/web-vue';
 import UploadImageDialog from '@/components/business/purchase/purchaseItemUploadPic/index.vue'
@@ -155,9 +169,13 @@ import * as XLSX from 'xlsx';
 import ExcelPreviewTable from '@/components/business/purchase/excelPreviewTable/index.vue';
 import { DateInputEditor, InputEditor, ListEditor, TextAreaEditor } from '@visactor/vtable-editors';
 import ApprovalSubmitTable from '@/components/business/approval/approvalSubmitTable/index.vue';
+import ConfirmOrderTable from '@/components/business/purchase/purchaseConfirmOrder/index.vue';
+
+
 const approvalStore = useApprovalStore();
 const route = useRoute();
 const purchaseOrderItemStore = usePurchaseItemStore();
+const purchaseOrderStore = usePurchaseOrderStore();
 const tableContainer = ref(null);
 let tableInstance = null;
 const dialogVisible = ref(false)
@@ -176,11 +194,31 @@ const addFormData = ref({
   supplier: '',
   remark: ''
 })
+const confirmOrderModalVisible = ref(false)
+const confirmOrderData = ref({
+  orderedItems: [], // 存放已下单的列表
+  unOrderedItems: [] // 存
+})
+
+
 const supplierOptions = ref([])
 const excelAddInputRef = ref(null);
 const excelReplaceInputRef = ref(null);
 const approvalData = ref([])
+const shippingFee = computed({
+  get: () => {
+    return purchaseOrderStore.getshippingFeeFromPurchaseOrderID(route.params.id)
+  },
+  set: (value) => {
+    purchaseOrderStore.updateShippingFee(route.params.id, value);
+  }
+});
 
+const overViewData = ref({
+  totalItems: 0,
+  totalPrice: 0,
+  totalPriceWithShipping:0
+});
 const showUploadDialog = (purchaseItemId) => {
   currentPurchaseItemId.value = purchaseItemId
   dialogVisible.value = true
@@ -380,11 +418,61 @@ const handleUploadSuccess = (files) => {
   console.log('当前采购项目ID：', currentPurchaseItemId.value)
   // 这里可以添加上传成功后的刷新逻辑
 }
+const handleConfirmOrderOk = async(params)=>{
+    
+  if(params.action === 'confirm'){
+    console.log('确认下单')
+    console.log(params.selectedKeys)
+    for(let i = 0; i < params.selectedKeys.length; i++){
+      await purchaseOrderItemStore.updatePurchaseItemOrderStatus(params.selectedKeys[i], 1)
+    }
+  
+    //await purchaseOrderItemStore.updatePurchaseItemOrderStatus(currentPurchaseItemId.value, 1)
+  }else{
+    console.log('取消下单')
+    console.log(params.selectedKeys)
+    for(let i = 0; i < params.selectedKeys.length; i++){
+      await purchaseOrderItemStore.updatePurchaseItemOrderStatus(params.selectedKeys[i], 0)
+    }
+    //await purchaseOrderItemStore.updatePurchaseItemOrderStatus(currentPurchaseItemId.value, 0)
+  }
+  Message.success('操作成功')
+  await fetchOrderDetail()
+}
 
-
+const handleConfirmOrderCancel = async()=>{
+  console.log('取消')
+}
 
 const handleOrderConfirm = async() => {
-  console.log('确认下单')
+  //下单
+  //过滤 下单状态是否是未下单
+  try {
+    const orderId = route.params.id;
+    const response = await purchaseOrderItemStore.getPurchaseItems(orderId);
+    if (response.code === 200 && Array.isArray(response.data)) {
+      // Filter items where approval_status.status is not equal to 1
+      confirmOrderData.value.unOrderedItems = response.data.filter(item => 
+        item.order_status === 0 && item.approval_status.status === 1
+      );
+
+      confirmOrderData.value.orderedItems = response.data.filter(item => 
+        item.order_status === 1 && item.approval_status.status === 1
+      );
+      
+      // Open the approval modal if there are items to approve
+      // if (confirmOrderData.value.orderedItems.length > 0) {
+      confirmOrderModalVisible.value = true
+      // } else {
+      //   Message.info('没有可下单的项目');
+      // }
+    } else {
+      throw new Error('Invalid data format');
+    }
+  } catch (error) {
+    Message.error('获取下单数据失败');
+    console.error('获取下单数据失败:', error);
+  }
 }
 
 
@@ -459,12 +547,12 @@ const columns = [
     minWidth: 150,
     width: 150,
     editor: 'input-editor',
-    aggregation: {
-        aggregationType: VTable.TYPES.AggregationType.SUM,
-        formatFun(value) {
-            return "总数:";
-        }
-    }
+    // aggregation: {
+    //     aggregationType: VTable.TYPES.AggregationType.SUM,
+    //     formatFun(value) {
+    //         return "共计:";
+    //     }
+    // }
   },
   {
     field: 'quantity',
@@ -472,12 +560,12 @@ const columns = [
     minWidth: 100,
     width: 100,
     editor: 'input-editor',
-    aggregation: {
-        aggregationType: VTable.TYPES.AggregationType.SUM,
-        formatFun(value) {
-            return value ? `${Number(value).toFixed(8)}` : '';
-        }
-    }
+    // aggregation: {
+    //     aggregationType: VTable.TYPES.AggregationType.SUM,
+    //     formatFun(value) {
+    //         return value ? `${Number(value).toFixed(8)}` : '';
+    //     }
+    // }
   },
   {
     field: 'unit',
@@ -492,12 +580,12 @@ const columns = [
     minWidth: 120,
     width: 120,
     editor: 'input-editor',
-    aggregation: {
-        aggregationType: VTable.TYPES.AggregationType.SUM,
-        formatFun(value) {
-            return "总价:";
-        }
-    }
+    // aggregation: {
+    //     aggregationType: VTable.TYPES.AggregationType.SUM,
+    //     formatFun(value) {
+    //         return "共计:";
+    //     }
+    // }
   },
   {
     field: 'total_price',
@@ -508,12 +596,12 @@ const columns = [
     //   return row - 1;
     // },
     editor: 'input-editor',
-    aggregation: {
-        aggregationType: VTable.TYPES.AggregationType.SUM,
-        formatFun(value) {
-            return value ? `${Number(value).toFixed(8)}` : '';
-        }
-    }
+    // aggregation: {
+    //     aggregationType: VTable.TYPES.AggregationType.SUM,
+    //     formatFun(value) {
+    //         return value ? `${Number(value).toFixed(8)}`: '';
+    //     }
+    // }
   },
   {
     field: 'pics',
@@ -525,12 +613,13 @@ const columns = [
       fontWeight: 'bold',
       backgroundColor: '#f2f3f5'
     },
-    icon: ({ row, table }) => {
-      // 检查是否是最后一行
-      const isLastRow = row === table.rowCount-1;
-      // 如果是最后一行返回空数组，否则返回原有的图标
-      return isLastRow ? [] : ['upload', 'view'];
-    },
+    icon:['upload', 'view'],
+    // icon: ({ row, table }) => {
+    //   // 检查是否是最后一行
+    //   const isLastRow = row === table.rowCount-1;
+    //   // 如果是最后一行返回空数组，否则返回原有的图标
+    //   return isLastRow ? [] : ['upload', 'view'];
+    // },
     cellStyle: () => ({
       textAlign: 'center'
     }),
@@ -657,7 +746,7 @@ const initTable = (data) => {
         }
       }
     },
-    bottomFrozenRowCount: 1,
+    // bottomFrozenRowCount: 1,
     fieldFormat(record){
       console.log('record:', record,123123);
     },
@@ -675,7 +764,6 @@ const initTable = (data) => {
   // 监听单元格值变化,并同步
   tableInstance.on('change_cell_value', async(args) => {
     const purchaseItemIdIndex = columns.findIndex(col => col.field === 'purchase_item_id');
-    
     // 获取当前行的采购项目ID
     const purchaseItemId = tableInstance.getCellValue(purchaseItemIdIndex, args.row);
     const updatedItemName = columns[args.col].field;
@@ -829,11 +917,13 @@ const fetchOrderDetail = async () => {
       }));
 
       console.log('Formatted Data:', formattedData);
-      
       // 确保DOM元素已经准备好
       nextTick(() => {
         initTable(formattedData);
+        updateTotalPrice();
       });
+      // 更新总价
+      //updateTotalPrice();
     } else {
       throw new Error('Invalid data format');
     }
@@ -1046,8 +1136,6 @@ const approvalForm = ref({
 });
 
 
-
-
 // 打开审批弹窗
 const handleSubmitApproval = async () => {
   try {
@@ -1080,6 +1168,56 @@ const submitApproval = () => {
   approvalModalVisible.value = false;
   approvalForm.value.reason = '';
 };
+
+const handleSavePostage = async (postage) => {
+  // console.log('邮费已保存:', postage);
+  shippingFee.value = postage
+  const res = await purchaseOrderStore.updatePurchaseOrder({
+    orderId: route.params.id,
+    shipping_fee: shippingFee.value
+  })
+  if(res.code === 200){
+    Message.success('邮费已保存')
+    updateTotalPrice()
+  }else{
+    Message.error('邮费保存失败')
+  }
+  //postage.value = postage
+};
+
+const updateTotalPrice = async () => {
+  await purchaseOrderStore.getShippingFee(route.params.id);
+  const records = tableInstance.records;
+  console.log('records:', records);
+
+  // Calculate total items
+  overViewData.value.totalItems = records.length;
+
+  // Calculate total price
+  overViewData.value.totalPrice = records.reduce((sum, record) => {
+    return sum + parseFloat(record.total_price || 0);
+  }, 0).toFixed(2);
+
+  // Calculate total price with shipping
+  overViewData.value.totalPriceWithShipping = (
+    parseFloat(overViewData.value.totalPrice) + parseFloat(shippingFee.value)
+  ).toFixed(2);
+
+  console.log('overViewData:', overViewData.value);
+};
+
+// // Computed properties for overview
+// const totalItems = computed(() => tableInstance.records.length);
+
+// // const totalPrice = computed(() => {
+// //   return tableInstance.records.reduce((sum, record) => {
+// //     return sum + parseFloat(record.total_price || 0);
+// //   }, 0).toFixed(8);
+// // });
+
+// // const totalPriceWithShipping = computed(() => {
+// //   return (parseFloat(totalPrice.value) + parseFloat(shippingFee.value)).toFixed(8);
+// // });
 </script>
 <style scoped>
 
@@ -1101,7 +1239,7 @@ const submitApproval = () => {
 
 .table-container {
   /* width: 100%;*/
-  height: 700px; 
+  height: 660px; 
   /* overflow: auto; */
   -webkit-overflow-scrolling: touch;
 }
@@ -1153,6 +1291,31 @@ const submitApproval = () => {
 
 .approval-reason {
   margin-top: 16px;
+}
+
+.overview-section {
+  display: flex;
+  justify-content: space-around;
+  align-items: center;
+  border-top: 1px solid #e5e6eb;
+  background-color: #f9f9f9;
+  border-radius: 8px;
+  font-size: 18px;
+  line-height: 1.5;
+}
+
+.overview-item {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  padding: 10px;
+  font-weight: bold;
+  color: #333;
+}
+
+.overview-item span {
+  font-size: 18px;
+  color: #165dff;
 }
 </style>
 

@@ -91,9 +91,10 @@ export const useStorageStore = defineStore('storage', () => {
 
       if (keyword) {
         query += `&keyword=${keyword}`;
-      } else if (goods_id) {
-        query += `&goods_id=${goods_id}`;
-      }
+      } 
+      // else if (goods_id) {
+      //   query += `&goods_id=${goods_id}`;
+      // }
 
       const response = await request({
         url: `/storage?${query}`,

@@ -5,6 +5,7 @@ import { usePurchaseOrderStore } from './modules/purchase/purchaseOrderStore.js'
 import { usePurchaseItemStore } from './modules/purchase/purchaseItemStore.js';
 import { useApprovalStore } from './modules/approval/approvalStore.js';
 import { useUserStore } from './modules/user/userStore';
+import { useReceiptStore } from './modules/storage/receipt.js';
 
 const pinia = createPinia();
 
@@ -16,4 +17,5 @@ export {
     usePurchaseItemStore,
     useApprovalStore,
     useUserStore,
+    useReceiptStore,
 };

@@ -36,32 +36,55 @@
         提交审批
       </a-button>
 
-      <a-button type="dashed" @click="handleSubmitApproval">
+      <a-button type="dashed" @click="handleOrder">
         <template #icon>
           <icon-send />
         </template>
-        确认下单
+        下单/取消下单
       </a-button>
-      
     </a-space>
+    <div class="postage-container">
+      邮费:
+      <a-input-number
+        v-model="postage"
+        :min="0"
+        :max="99999999.99999999"
+        :precision="8"
+        placeholder="输入邮费"
+        style="width: 200px;"
+      />
+
+      <a-button type="primary" @click="handleSavePostage">
+        <template #icon>
+          <icon-save />
+        </template>
+        保存邮费
+      </a-button>
+    </div>
   </div>
 </template>
 
 <script setup>
-import { IconPlus, IconDelete, IconUpload, IconDownload, IconLaunch, IconSend } from '@arco-design/web-vue/es/icon'
+import { IconPlus, IconDelete, IconUpload, IconDownload, IconLaunch, IconSend, IconSave } from '@arco-design/web-vue/es/icon'
 import { Message } from '@arco-design/web-vue'
-import { usePurchaseItemStore } from '@/stores/modules/purchase/purchaseItemStore'
 import ExcelJS from 'exceljs'
 import { useRoute } from 'vue-router'
-import { ref } from 'vue';
+import { ref,computed } from 'vue';
+import { usePurchaseOrderStore } from '@/stores'
+const purchaseOrderStore = usePurchaseOrderStore()
 
-
-
-const emit = defineEmits(['add-row', 'delete-rows', 'excel-add', 'excel-replace', 'refresh-data','submit-approval','order-confirm'])
-
-
-// 获取路由实例
+const emit = defineEmits(['add-row', 'delete-rows', 'excel-add', 'excel-replace', 'refresh-data','submit-approval','order-confirm','save-postage'])
 const route = useRoute()
+const orderId = route.params.id 
+const postage = computed({
+  get: () =>  {
+    return purchaseOrderStore.getshippingFeeFromPurchaseOrderID(orderId)
+  },
+  set: (value) => {
+    purchaseOrderStore.updateShippingFee(orderId, value);
+  }
+});
+// // 获取路由实例
 
 // 添加新行
 const handleAddRow = () => {
@@ -78,6 +101,9 @@ const handleExcelAdd = () => {
   emit('excel-add')
 }
 
+const handleOrder = ()=>{
+  emit("order-confirm")
+}
 
 
 const handleSubmitApproval = () => {
@@ -140,9 +166,27 @@ const handleExcelDownload = async () => {
 }
 
 
+
+// Handle save postage
+const handleSavePostage = () => {
+
+  // Emit or handle the postage value as needed
+  console.log('邮费已保存:', postage.value)
+  emit('save-postage', postage.value)
+}
+
 </script>
 <style scoped>
 .toolbar-container {
   margin-bottom: 16px;
+  display: flex;
+  justify-content: space-between;
+}
+
+.postage-container {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px; /* Optional: adds space between the input and button */
 }
 </style>

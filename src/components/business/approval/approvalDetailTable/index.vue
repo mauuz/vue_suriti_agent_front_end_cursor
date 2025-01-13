@@ -138,7 +138,6 @@ const columns = [
     { title: '序号', dataIndex: 'sequence', key: 'sequence' },
     { title: '采购订单ID', dataIndex: 'purchase_order_id', key: 'purchase_order_id' },
     { title: '供应商名称', dataIndex: 'supplier_name', key: 'supplier_name' },
-    { title: '创建者名称', dataIndex: 'creator_name', key: 'creator_name' },
     { title: '产品代码', dataIndex: 'product_code', key: 'product_code' },
     { title: '产品名称(中文)', dataIndex: 'product_name_zh', key: 'product_name_zh' },
     { title: '产品名称(英文)', dataIndex: 'product_name_en', key: 'product_name_en' },
@@ -149,7 +148,10 @@ const columns = [
     { title: '总价', dataIndex: 'total_price', key: 'total_price' },
     { title: '图片', dataIndex: 'pics', key: 'pics' ,slotName: 'pics'},
     { title: '备注', dataIndex: 'remark', key: 'remark' },
+    { title: '申请人', dataIndex: 'applicant_name', key: 'applicant_name' },
+    { title: '申请理由', dataIndex: 'applicant_reason', key: 'apply_reason' },
     { title: '采购项目ID', dataIndex: 'purchase_item_id', key: 'purchase_item_id' },
+    { title: '采购创建者名称', dataIndex: 'creator_name', key: 'creator_name' },
     { title: '创建时间', dataIndex: 'created_at', key: 'created_at' }
 ];
 

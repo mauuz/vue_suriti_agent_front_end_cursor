@@ -144,6 +144,20 @@ export const usePurchaseItemStore = defineStore('purchaseItem', () => {
     }
   };  
 
+  const updatePurchaseItemOrderStatus = async (purchaseOrderId, status) => {
+    // 更新采购项目下单状态
+    try {
+      const response = await request({
+        url: `/items/${purchaseOrderId}?status=${status}`,
+        method: 'PATCH',
+      });
+      return response;
+    } catch (error) {
+      console.error('更新采购项目下单状态错误:', error);
+      throw error;
+    }
+  };
+
   const getPurchaseItemDetail = async (itemId) => {
     // 获取采购项目详情
   };
@@ -173,6 +187,7 @@ export const usePurchaseItemStore = defineStore('purchaseItem', () => {
     deletePurchaseItemPic,
     uploadPurchaseItemPic,
     createPurchaseItemBatch,
+    updatePurchaseItemOrderStatus,
 
     // 计算属性
     activePurchaseItems,

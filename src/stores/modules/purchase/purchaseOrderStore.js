@@ -11,7 +11,7 @@ export const usePurchaseOrderStore = defineStore('purchaseOrder', () => {
   const currentPage = ref(1);
   const totalPages = ref(1);
   const pageSize = ref(10);
-
+  const shippingFees = ref({});
   // 操作 (Actions)
   const getPurchaseOrders = async (params) => {
     try {
@@ -86,21 +86,31 @@ export const usePurchaseOrderStore = defineStore('purchaseOrder', () => {
 
   const updatePurchaseOrder = async (orderData) => {
     try {
-      console.log(orderData,2222)
+      console.log(orderData, 2222);
       loading.value = true;
-      const response = await request({
-        url: `/purchase-orders/${orderData.orderId}`,
-        method: 'PUT',
-        data: {
-          description: orderData.description,
-          order_type: orderData.type === 'STORAGE' ? 0 : 1,
-          remarks: orderData.remarks || '',
-          supplier_id: orderData.supplier_id
+
+      // Prepare the data object conditionally
+      const data = {};
+      const allowedFields = ['description', 'type', 'remarks', 'supplier_id', 'shipping_fee'];
+
+      allowedFields.forEach(field => {
+        if (orderData[field] !== undefined) {
+          if (field === 'type') {
+            data['order_type'] = orderData[field] === 'STORAGE' ? 0 : 1;
+          } else {
+            data[field] = orderData[field];
+          }
         }
       });
 
+      const response = await request({
+        url: `/purchase-orders/${orderData.orderId}`,
+        method: 'PUT',
+        data
+      });
+
       if (response.code === 200) {
-        return response.data;
+        return response;
       }
       throw new Error(response.message || '更新采购订单失败');
     } catch (error) {
@@ -108,6 +118,25 @@ export const usePurchaseOrderStore = defineStore('purchaseOrder', () => {
       throw error;
     } finally {
       loading.value = false;
+    }
+  };
+  const getShippingFee = async (orderId) => {
+    try {
+      const response = await request({
+        url: `/purchase-orders/${orderId}/shipping-fee`,
+        method: 'GET'
+      });
+
+      if (response.code === 200) {
+        // 更新 shippingFees
+        shippingFees.value[orderId] = response.data.shipping_fee;
+        return response.data.shipping_fee;
+      } else {
+        throw new Error(response.message || '获取邮费失败');
+      }
+    } catch (error) {
+      console.error('获取邮费错误:', error);
+      throw error;
     }
   };
 
@@ -166,6 +195,15 @@ export const usePurchaseOrderStore = defineStore('purchaseOrder', () => {
     return statusMap[status] || '未知状态';
   };
 
+  // 更新采购订单的邮费
+  const updateShippingFee = (orderId, fee) => {
+    shippingFees.value[orderId] = fee; 
+  }
+
+  const getshippingFeeFromPurchaseOrderID = (orderId)=>{
+      return shippingFees.value[orderId]
+  }
+
   return {
     // 状态
     purchaseOrders,
@@ -175,6 +213,7 @@ export const usePurchaseOrderStore = defineStore('purchaseOrder', () => {
     currentPage,
     totalPages,
     pageSize,
+    shippingFees,
 
     // 操作
     getPurchaseOrders,
@@ -183,6 +222,9 @@ export const usePurchaseOrderStore = defineStore('purchaseOrder', () => {
     deletePurchaseOrder,
     getPurchaseOrderDetail,
     submitForApproval,
+    getShippingFee,
+    updateShippingFee,
+    getshippingFeeFromPurchaseOrderID,
 
     // 计算属性
     pendingOrders,

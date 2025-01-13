@@ -31,7 +31,8 @@ instance.interceptors.request.use(config => {
 instance.interceptors.response.use(response => {
     return response.data; // 直接返回数据
 }, error => {
-    if (error.response && error.response.status === 401) {
+    console.log(error.response.data.code);
+    if (error.response.data.code === 401) {
         localStorage.removeItem('access_token'); // 删除 access_token
         router.replace('/login'); // 使用 Vue Router replace 跳转到登录页面
     }

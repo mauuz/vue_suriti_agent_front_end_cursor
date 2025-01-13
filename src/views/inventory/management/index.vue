@@ -67,10 +67,10 @@ const handlePageSizeChange = async (size) => {
 };
 
 const fetchSearchInventoryData = async(params)=>{
-  const isNumeric = /^\d+$/.test(storageStore.searchKey);
+  // const isNumeric = /^\d+$/.test(storageStore.searchKey);
   await storageStore.searchStorageItem({
-    keyword: isNumeric ? undefined : storageStore.searchKey,
-    goods_id: isNumeric ? storageStore.searchKey : undefined,
+    keyword: storageStore.searchKey,
+    // goods_id: isNumeric ? storageStore.searchKey : undefined,
     page: params?.page||storageStore.currentPage,
     page_size: storageStore.pageSize
   });

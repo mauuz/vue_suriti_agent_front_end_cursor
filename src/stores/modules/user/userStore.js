@@ -38,10 +38,10 @@ export const useUserStore = defineStore('user', () => {
         userId: user_id,
         fullName: user_full_name
       }
-
+      console.log(userInfo.value)
       // 存储 token 到 localStorage
       localStorage.setItem('access_token', access_token)
-        
+      localStorage.setItem('user_full_name', user_full_name)
       return Promise.resolve(response)
     } catch (error) {
       // 统一错误处理

@@ -7,6 +7,7 @@ export const usePurchaseItemStore = defineStore('purchaseItem', () => {
   const purchaseItems = ref([]);
   const currentItem = ref(null);
   const loading = ref(false);
+  const delivery_address = ref('江苏省太仓市归庄镇渠泾村香归路华龙用呢');
 
   // 操作 (Actions)
   const getPurchaseItems = async (orderId) => {
@@ -171,13 +172,41 @@ export const usePurchaseItemStore = defineStore('purchaseItem', () => {
     // 获取已完成的采购项目
   };
 
+  const downloadPurchaseItemDetailPDF = async (purchaseOrderId, info) => {
+    // 下载采购项目详情PDF
+    try {
+      const data = {
+        delivery_address: info.delivery_address,
+        ...(info.address && { address: info.address }),
+        ...(info.phone && { phone: info.phone }),
+        ...(info.email && { email: info.email }),
+        ...(info.account && { account: info.account }),
+        ...(info.recipient && { recipient: info.recipient }),
+        ...(info.bank && { bank: info.bank }),
+        ...(info.bank_address && { bank_address: info.bank_address })
+      };
+
+      const response = await request({
+        url: `/items/${purchaseOrderId}/pdf`,
+        method: 'POST',
+        data: data,
+        responseType: 'blob' // Ensure the response is treated as a blob
+      });
+      
+      // Return both the data and headers
+      return response;
+    } catch (error) {
+      console.error('下载采购项目详情PDF错误:', error);
+      throw error;
+    }
+  };
 
   return {
     // 状态
     purchaseItems,
     currentItem,
     loading,
-
+    delivery_address,
     // 操作
     getPurchaseItems,
     createPurchaseItem,
@@ -188,6 +217,7 @@ export const usePurchaseItemStore = defineStore('purchaseItem', () => {
     uploadPurchaseItemPic,
     createPurchaseItemBatch,
     updatePurchaseItemOrderStatus,
+    downloadPurchaseItemDetailPDF,
 
     // 计算属性
     activePurchaseItems,

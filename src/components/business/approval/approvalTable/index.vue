@@ -22,7 +22,7 @@
 </template>
 
 <script setup>
-import { ref } from 'vue'
+import { ref,onActivated } from 'vue'
 import { useApprovalStore } from '@/stores'
 import { Message } from '@arco-design/web-vue'
 import { useRouter } from 'vue-router'
@@ -109,7 +109,7 @@ const viewDetails = (record) => {
 }
 
 // Fetch approvals when the component is mounted
-// onMounted(() => {
+// onActivated(() => {
 //   loading.value = true
 //   approvalStore.getApprovalList().then(response => {
 //     data.value = response.data

@@ -19,7 +19,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue';
+import { ref, onMounted,onActivated } from 'vue';
 import { useApprovalStore } from '@/stores';
 
 const approvalStore = useApprovalStore();
@@ -110,7 +110,7 @@ const fetchData = async () => {
 };
 
 // 组件挂载时获取数据
-onMounted(() => {
+onActivated(() => {
   fetchData();
 });
 </script>

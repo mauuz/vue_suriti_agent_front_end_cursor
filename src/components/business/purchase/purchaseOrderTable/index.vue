@@ -207,6 +207,7 @@ const columns = [
 const getOrderStatusColor = (status) => {
   const colorMap = {
     '未下单': 'orange',
+    '部分下单': 'blue',
     '已下单': 'green'
   }
   return colorMap[status] || 'gray'
@@ -223,6 +224,7 @@ const getReceiveStatusColor = (status) => {
 
 const getApprovalStatusColor = (status) => {
   const colorMap = {
+    '未提交': 'gray',
     '待审批': 'orange',
     '已通过': 'green',
     '已驳回': 'red'

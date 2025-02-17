@@ -16,9 +16,9 @@
     </div>
     <!-- Overview Section -->
     <div class="overview-section">
-      <div class="overview-item">总共: <span> {{ overViewData.totalItems }}</span> 项</div>
-      <div class="overview-item">总价: <span> {{ overViewData.totalPrice }}</span> 元</div>
-      <div class="overview-item">含邮费总价: <span> {{ overViewData.totalPriceWithShipping }}</span> 元</div>
+      <div class="overview-item">总共:<span class="value">{{ overViewData.totalItems }}</span> 项</div>
+      <div class="overview-item">总价:<span class="value">{{ overViewData.totalPrice }}</span> 元</div>
+      <div class="overview-item">含邮费总价:<span class="value">{{ overViewData.totalPriceWithShipping }}</span> 元</div>
     </div>
   </div>
   <upload-image-dialog
@@ -157,7 +157,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted, onUnmounted, nextTick, h,computed, reactive } from 'vue';
+import { ref, onMounted, onUnmounted, nextTick, h,computed, reactive,onActivated } from 'vue';
 import { useRoute } from 'vue-router';
 import { usePurchaseItemStore, useSupplyStore,useApprovalStore,useStorageStore,usePurchaseOrderStore} from '@/stores';
 import * as VTable from '@visactor/vtable';
@@ -940,7 +940,7 @@ function getPurchaseItemId(row){
 }
 
 // 确保在组件挂载后DOM元素已经准备好
-onMounted(async() => {
+onActivated(async() => {
   nextTick(async () => {
     await fetchOrderDetail();
   });
@@ -968,7 +968,8 @@ const handleAddSubmit = async () => {
       }
 
       // 计算总价
-      const total_price = addFormData.value.quantity * addFormData.value.unit_price
+      const total_price = (addFormData.value.quantity * addFormData.value.unit_price).toFixed(8)
+      console.log('total_price:', total_price);
 
       // 构建基础提交数据
       const submitData = {
@@ -1239,7 +1240,7 @@ const updateTotalPrice = async () => {
 
 .table-container {
   /* width: 100%;*/
-  height: 660px; 
+  height: 570px; 
   /* overflow: auto; */
   -webkit-overflow-scrolling: touch;
 }
@@ -1295,12 +1296,13 @@ const updateTotalPrice = async () => {
 
 .overview-section {
   display: flex;
-  justify-content: space-around;
+  justify-content: flex-end;
+  /* justify-content: space-around; */
   align-items: center;
   border-top: 1px solid #e5e6eb;
   background-color: #f9f9f9;
   border-radius: 8px;
-  font-size: 18px;
+  font-size: 16px;
   line-height: 1.5;
 }
 
@@ -1315,7 +1317,14 @@ const updateTotalPrice = async () => {
 
 .overview-item span {
   font-size: 18px;
-  color: #165dff;
+  /* color: #165dff; */
+}
+
+.overview-item .value {
+  margin-left: 8px;  /* 调整这个值可以控制间距大小 */
+  margin-right: 8px;
+  font-size: 18px;
+  color: #f76560;  /* 可选：添加特殊颜色突出数值 */
 }
 </style>
 

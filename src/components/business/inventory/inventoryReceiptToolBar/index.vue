@@ -4,6 +4,7 @@
       v-model="searchValue"
       placeholder="请输入订单号"
       search-button
+      allow-clear
       @search="handleSearch"
       class="search-input"
     />

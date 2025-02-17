@@ -50,54 +50,52 @@ export const useReceiptStore = defineStore('receipt', () => {
     }
   }
 
-  async function updateReceipt(receiptId, receiptData) {
-    try {
-      const response = await request({
-        url: `/storage/receipts/${receiptId}`,
-        method: 'PUT',
-        data: receiptData
-      });
-      return response;
-    } catch (error) {
-      console.error('Failed to update receipt:', error);
-      throw error;
-    }
+  async function updateReceipt(purchaseOrderId, receiptData) {
+    // try {
+    //   const response = await request({
+    //     url: `/inventory/order/${purchaseOrderId}?page=1&page_size=3&type=0`,
+    //     method: 'PUT',
+    //     data: receiptData
+    //   });
+    //   return response;
+    // } catch (error) {
+    //   console.error('Failed to update receipt:', error);
+    //   throw error;
+    // }
   }
 
-  async function getReceiptDetail(receiptId) {
+  const getReceiptDetail = async ({ orderId, page = 1, pageSize = 10, type }) => {
     try {
+      // 根据状态映射type参数
+      
       const response = await request({
-        url: `/storage/receipts/${receiptId}`,
-        method: 'GET'
+        url: `/inventory/order/${orderId}`,
+        method: 'GET',
+        params: {
+          page,
+          page_size: pageSize,
+          type
+        }
       });
-      return response;
+
+      if (response.code === 200) {
+        return response;
+      }
+      throw new Error(response.message || '获取收货单详情失败');
     } catch (error) {
-      console.error('Failed to get receipt detail:', error);
+      console.error('获取收货单详情错误:', error);
       throw error;
     }
-  }
+  };
 
-  async function searchReceipt(params) {
+  const searchReceipt = async (params) => {
     try {
-      const { keyword, page, page_size, order_type, status } = params;
-      let query = `page=${page}&page_size=${page_size}`;
-
-      if (keyword) {
-        query += `&keyword=${keyword}`;
-      }
-      if (order_type !== undefined) {
-        query += `&order_type=${order_type}`;
-      }
-      if (status !== undefined) {
-        query += `&status=${status}`;
-      }
-
       const response = await request({
-        url: `/storage/receipts?${query}`,
+        url: `/inventory/search?keyword=${params.keywords}&page=${params.page}&page_size=${params.page_size}`,
         method: 'GET'
       });
       receiptItems.value = response.data.items;
-      total_count.value = response.data.total_count;
+      total_count.value = response.data.total_orders;
       currentPage.value = params.page;
       pageSize.value = params.page_size;
       return response;
@@ -107,16 +105,42 @@ export const useReceiptStore = defineStore('receipt', () => {
     }
   }
 
-  async function confirmReceipt(receiptId, receiptData) {
+  const receiveReceipt = async (purchaseOrderItemId, receiptData) => {
     try {
       const response = await request({
-        url: `/storage/receipts/${receiptId}/confirm`,
+        url: `/inventory/${purchaseOrderItemId}`,
         method: 'POST',
         data: receiptData
       });
       return response;
     } catch (error) {
-      console.error('Failed to confirm receipt:', error);
+      console.error('Failed to receive receipt:', error);
+      throw error;
+    }
+  }
+
+  const receiveAllReceipt = async (purchaseOrderId) => {
+    try {
+      const response = await request({
+        url: `/inventory/received-all/${purchaseOrderId}`,
+        method: 'POST'
+      });
+      return response;
+    } catch (error) {
+      console.error('Failed to receive all receipts:', error);
+      throw error;
+    }
+  }
+
+  const cancelAllReceipt = async (purchaseOrderId) => {
+    try {
+      const response = await request({
+        url: `/inventory/cancel-all/${purchaseOrderId}`,
+        method: 'POST'
+      });
+      return response;
+    } catch (error) {
+      console.error('Failed to cancel all receipts:', error);
       throw error;
     }
   }
@@ -138,6 +162,8 @@ export const useReceiptStore = defineStore('receipt', () => {
     updateReceipt,
     getReceiptDetail,
     searchReceipt,
-    confirmReceipt
+    receiveReceipt,
+    receiveAllReceipt,
+    cancelAllReceipt
   };
 });

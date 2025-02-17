@@ -97,7 +97,7 @@ export const useSupplyStore = defineStore('supply', () => {
         url: `/suppliers/${supplierData.supplierId}`,
         method: 'PUT',
         data: {
-          supplier_name: supplierData.supplierName,
+          name: supplierData.supplierName,
           contact_info: supplierData.contactInfo,
           contact_person: supplierData.contactPerson,
           payment_account: supplierData.paymentAccount,
@@ -119,9 +119,32 @@ export const useSupplyStore = defineStore('supply', () => {
   const deleteSupplier = async (supplierId) => {
     // 删除供应商
   };
+  // 获取供应商详情（查找）
+  const getSupplierDetail = async (supplierId, shipping_address, name, page, page_size) => {
+    try {
+      // Create params object conditionally
+      const params = {};
+      if (supplierId) params.supplier_id = supplierId;
+      if (shipping_address) params.shipping_address = shipping_address;
+      if (name) params.name = name;
+      if (page) params.page = page;
+      if (page_size) params.page_size = page_size;
 
-  const getSupplierDetail = async (supplierId) => {
-    // 获取供应商详情
+      const response = await request({
+        url: `/suppliers`,
+        method: 'GET',
+        params: params // Pass the constructed params object
+      });
+
+      if (response.code === 200) {
+        return response.data; // Return the supplier details
+      } else {
+        throw new Error(response.message || '获取供应商详情失败');
+      }
+    } catch (error) {
+      console.error('获取供应商详情错误:', error);
+      throw error;
+    }
   };
 
   const evaluateSupplier = async (supplierId, evaluationData) => {

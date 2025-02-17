@@ -63,7 +63,7 @@
         <a-input v-model="editForm.unit" placeholder="请输入单位" />
       </a-form-item>
       <a-form-item field="price" label="价格" :rules="[{ required: true, message: '请输入价格' }]">
-        <a-input-number v-model="editForm.price" placeholder="请输入价格" />
+        <a-input-number v-model="editForm.price" placeholder="请输入价格" :default-value="Number(editForm.price)"/>
       </a-form-item>
       <a-form-item field="available_quantity" label="可用数量" :rules="[{ required: true, message: '请输入可用数量' }]">
         <a-input-number v-model="editForm.available_quantity" placeholder="请输入可用数量" />

@@ -4,8 +4,8 @@ import router from '@/router'; // Adjust the path to your router file
 // 创建一个 Axios 实例
 //baseURL: 'https://api.agent.jellon.store/api/v1/'
 const instance = axios.create({
-    //baseURL: 'https://api.agent.jellon.store/api/v1/', // 请替换为你的基础URL
-    baseURL: 'http://localhost:8000/api/v1/', // 请替换为你的基础URL
+    baseURL: 'https://api.agent.jellon.store/api/v1/', // 请替换为你的基础URL
+    //baseURL: 'http://localhost:8000/api/v1/', // 请替换为你的基础URL
     timeout: 18000, // 请求超时时间
 });
 
@@ -29,6 +29,10 @@ instance.interceptors.request.use(config => {
 
 // 响应拦截器
 instance.interceptors.response.use(response => {
+    if(response.data instanceof Blob){
+        console.log(response.headers['content-disposition']);
+        return response;
+    }
     return response.data; // 直接返回数据
 }, error => {
     console.log(error.response.data.code);

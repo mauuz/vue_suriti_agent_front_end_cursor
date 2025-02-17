@@ -18,7 +18,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, onMounted,onActivated} from 'vue'
 import ApprovalTable from '@/components/business/approval/approvalTable/index.vue'
 import { useApprovalStore } from '@/stores/modules/approval/approvalStore'
 
@@ -55,7 +55,7 @@ const handlePageSizeChange = (size) => {
 }
 
 // Fetch approvals when the component is mounted
-onMounted(() => {
+onActivated(() => {
   fetchApprovals()
 })
 </script>

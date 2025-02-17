@@ -3,25 +3,36 @@
     <div class="toolbar">
       <SupplierToolbar />
     </div>
-
-    <div class="table">
-      <SupplierTable 
-        :data="supplyStore.suppliers"
-        :loading="supplyStore.loading"
-        :pagination="{
-          total: supplyStore.total,
-          current: supplyStore.currentPage,
-          pageSize: supplyStore.pageSize,
-          showTotal: true,
-          showPageSize: true,
-          pageSizeOptions: [10, 20, 50, 100],
-          showJumper: true
+    <a-watermark
+        :content="watermarkContent"
+        :font="{
+          color: 'rgba(0, 0, 0, 0.05)',  // Lighter color
+          fontSize: 16,
+          fontFamily: 'sans-serif',
+          fontStyle: 'normal',
+          textAlign: 'center',
+          fontWeight: 'bold'
         }"
-        :row-selection="rowSelection"
-        @page-change="onPageChange"
-        @page-size-change="onPageSizeChange"
-      />    
-    </div>
+      >
+        <div class="table">
+          <SupplierTable 
+            :data="supplyStore.suppliers"
+            :loading="supplyStore.loading"
+            :pagination="{
+              total: supplyStore.total,
+              current: supplyStore.currentPage,
+              pageSize: supplyStore.pageSize,
+              showTotal: true,
+              showPageSize: true,
+              pageSizeOptions: [10, 20, 50, 100],
+              showJumper: true
+            }"
+            :row-selection="rowSelection"
+            @page-change="onPageChange"
+            @page-size-change="onPageSizeChange"
+          />    
+        </div>
+      </a-watermark>
   </div>
 </template>
 
@@ -31,6 +42,18 @@ import { useSupplyStore } from '@/stores'
 import SupplierToolbar from '@/components/business/supply/supplierToolBar/index.vue'
 import SupplierTable from '@/components/business/supply/supplierTable/index.vue'
 import { Message } from '@arco-design/web-vue';
+
+const getUserFullName = () => {
+  return localStorage.getItem('user_full_name') || 'Unknown User';
+};
+
+const getCurrentDate = () => {
+  const date = new Date();
+  return date.toLocaleDateString(); 
+};
+
+const watermarkContent = ref([`${getUserFullName()}`,`${getCurrentDate()}`,`严禁泄露`]);
+
 
 const supplyStore = useSupplyStore()
 
@@ -78,7 +101,7 @@ const onPageSizeChange = async (pageSize) => {
 //   console.log('activated purchase-supply')
 //   await fetchData()
 // })
-onMounted(async () => {
+onActivated(async () => {
   console.log('onmounted purchase-supply')
   await fetchData()
 })

@@ -38,9 +38,9 @@ export const usePurchaseOrderStore = defineStore('purchaseOrder', () => {
           orderType: order.order_type,
           supplierName: order.supplier_name,
           supplierId: order.supplier_id,
-          orderStatus: getOrderStatus(order.status),
-          receiveStatus: getReceiveStatus(order.status),
-          approvalStatus: getApprovalStatus(order.status)
+          orderStatus: getOrderStatus(order.order_status),
+          receiveStatus: getReceiveStatus(order.inventory_status),
+          approvalStatus: getApprovalStatus(order.approval_status)
         }));
         
         total.value = response.data.total_count;
@@ -145,7 +145,11 @@ export const usePurchaseOrderStore = defineStore('purchaseOrder', () => {
   };
 
   const getPurchaseOrderDetail = async (orderId) => {
-    // 获取采购订单详情
+    const response = await request({
+      url: `/purchase-orders/${orderId}`,
+      method: 'GET'
+    });
+    return response;
   };
 
   const submitForApproval = async (orderId) => {
@@ -169,7 +173,8 @@ export const usePurchaseOrderStore = defineStore('purchaseOrder', () => {
   const getOrderStatus = (status) => {
     const statusMap = {
       0: '未下单',
-      1: '已下单',
+      1: '部分下单',
+      2: '已下单',
       // 添加其他状态映射...
     };
     return statusMap[status] || '未知状态';
@@ -187,9 +192,10 @@ export const usePurchaseOrderStore = defineStore('purchaseOrder', () => {
 
   const getApprovalStatus = (status) => {
     const statusMap = {
-      0: '待审批',
-      1: '已通过',
-      2: '已驳回',
+      0: '未提交',
+      1: '审核中',
+      2: '未通过',
+      3: '已通过',
       // 添加其他状态映射...
     };
     return statusMap[status] || '未知状态';

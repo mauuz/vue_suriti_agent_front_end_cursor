@@ -81,7 +81,7 @@ const onPageSizeChange = async (pageSize) => {
 //   console.log('purchase-orders')
 //   await fetchData()
 // })
-onMounted(async () => {
+onActivated(async () => {
   console.log('onmounted purchase-orders')
   await fetchData()
 })

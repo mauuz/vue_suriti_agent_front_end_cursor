@@ -31,8 +31,8 @@
     :on-before-ok="handleBeforeConfirm"
   >
     <a-form :model="editFormData" ref="formRef" :rules="rules">
-      <a-form-item field="name" label="供应商名称" required>
-        <a-input v-model="editFormData.name" placeholder="请输入供应商名称" />
+      <a-form-item field="supplierName" label="供应商名称" required>
+        <a-input v-model="editFormData.supplierName" placeholder="请输入供应商名称" />
       </a-form-item>
 
       <a-form-item field="shippingAddress" label="发货地" required>
@@ -215,7 +215,7 @@ const getStatusText = (status) => {
 const editSupplier = (record) => {
   editFormData.value = {
     supplierId: record.supplierId,
-    name: record.supplierName || '',
+    supplierName: record.supplierName || '',
     contactInfo: record.contactInfo || '',
     contactPerson: record.contactPerson || '',
     paymentAccount: record.paymentAccount || '',
@@ -236,7 +236,7 @@ const handleCancel = () => {
   editDialogVisible.value = false
   editFormData.value = {
     supplierId:'',
-    name: '',
+    supplierName: '',
     contactInfo: '',
     contactPerson: '',
     paymentAccount: '',

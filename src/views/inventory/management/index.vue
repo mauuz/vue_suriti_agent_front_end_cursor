@@ -6,24 +6,38 @@
       @refresh="handleDeleteRefresh"
     />
     </div>
-
-    <inventory-table
-      :data="storageStore.storageItems"
-      :loading="storageStore.loading"
-      :pagination="{
-        current: storageStore.currentPage,
-        pageSize: storageStore.pageSize,
-        total: storageStore.total_count,
-        showTotal: true,
-        showPageSize: true,
-        pageSizeOptions: [10, 20, 50, 100],
-        showJumper: true
-      }"
-      :row-selection="rowSelection"
-      @page-change="handlePageChange"
-      @page-size-change="handlePageSizeChange"
-      @refresh="fetchInventoryData"
-    />
+    <div class="water-mark">
+      <a-watermark
+        :content="watermarkContent"
+        :font="{
+          color: 'rgba(0, 0, 0, 0.05)',  // Lighter color
+          fontSize: 16,
+          fontFamily: 'sans-serif',
+          fontStyle: 'normal',
+          textAlign: 'center',
+          fontWeight: 'bold'
+        }"
+      >
+        <inventory-table
+          :data="storageStore.storageItems"
+          :loading="storageStore.loading"
+          :pagination="{
+            current: storageStore.currentPage,
+            pageSize: storageStore.pageSize,
+            total: storageStore.total_count,
+            showTotal: true,
+            showPageSize: true,
+            pageSizeOptions: [10, 20, 50, 100],
+            showJumper: true
+          }"
+          :row-selection="rowSelection"
+          @page-change="handlePageChange"
+          @page-size-change="handlePageSizeChange"
+          @refresh="fetchInventoryData"
+        />
+      </a-watermark>
+    </div>
+     
   </div>
 </template>
 
@@ -39,6 +53,17 @@ const rowSelection = {
   showCheckedAll: true,
   onlyCurrent: false
 };
+
+const getUserFullName = () => {
+  return localStorage.getItem('user_full_name') || 'Unknown User';
+};
+
+const getCurrentDate = () => {
+  const date = new Date();
+  return date.toLocaleDateString(); 
+};
+
+const watermarkContent = ref([`${getUserFullName()}`,`${getCurrentDate()}`,`严禁泄露`]);
 
 const fetchInventoryData = async () => {
   await storageStore.getStorageList({
@@ -97,7 +122,7 @@ const handleSearch = async (value) => {
 //   console.log('activated inventory')
 //   await fetchInventoryData();
 // });
-onMounted(async () => {
+onActivated(async () => {
   console.log('onmounted inventory')
   await fetchInventoryData();
 });

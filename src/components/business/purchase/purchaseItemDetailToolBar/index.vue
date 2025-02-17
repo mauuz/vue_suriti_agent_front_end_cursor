@@ -42,6 +42,13 @@
         </template>
         下单/取消下单
       </a-button>
+
+      <a-button type="dashed" @click="showModal = true">
+        <template #icon>
+          <icon-download />
+        </template>
+        导出采购订单（PDF）
+      </a-button>
     </a-space>
     <div class="postage-container">
       邮费:
@@ -61,6 +68,36 @@
         保存邮费
       </a-button>
     </div>
+    
+
+  <a-modal v-model:visible="showModal" title="导出采购订单" @ok="handlePurchaseOrderDownload" @before-open="handleBeforeOpenPDFOutput">
+    <a-form :model="formData">
+      <a-form-item label="供应商地址">
+        <a-input v-model="formData.address" />
+      </a-form-item>
+      <a-form-item label="电话">
+        <a-input v-model="formData.phone" />
+      </a-form-item>
+      <a-form-item label="邮箱">
+        <a-input v-model="formData.email" />
+      </a-form-item>
+      <a-form-item label="收款人">
+        <a-input v-model="formData.recipient" />
+      </a-form-item>
+      <a-form-item label="银行账户">
+        <a-input v-model="formData.account" />
+      </a-form-item>
+      <a-form-item label="开户行名称">
+        <a-input v-model="formData.bank" />
+      </a-form-item>
+      <a-form-item label="开户行地址">
+        <a-input v-model="formData.bank_address" />
+      </a-form-item>
+      <a-form-item label="收货地址" :rules="[{ required: true, message: '请输入收货地址' }]">
+        <a-textarea v-model="formData.delivery_address" placeholder="请输入收货地址" />
+      </a-form-item>
+    </a-form>
+  </a-modal>
   </div>
 </template>
 
@@ -70,8 +107,12 @@ import { Message } from '@arco-design/web-vue'
 import ExcelJS from 'exceljs'
 import { useRoute } from 'vue-router'
 import { ref,computed } from 'vue';
-import { usePurchaseOrderStore } from '@/stores'
+import { usePurchaseOrderStore,usePurchaseItemStore,useSupplyStore } from '@/stores'
 const purchaseOrderStore = usePurchaseOrderStore()
+const purchaseItemStore = usePurchaseItemStore()
+const supplyStore = useSupplyStore()
+import { jsPDF } from 'jspdf'
+import 'jspdf-autotable'
 
 const emit = defineEmits(['add-row', 'delete-rows', 'excel-add', 'excel-replace', 'refresh-data','submit-approval','order-confirm','save-postage'])
 const route = useRoute()
@@ -84,7 +125,17 @@ const postage = computed({
     purchaseOrderStore.updateShippingFee(orderId, value);
   }
 });
-// // 获取路由实例
+const showModal = ref(false)
+const formData = ref({
+  delivery_address: '',
+  address: '',
+  phone: '',
+  email: '',
+  account: '',
+  recipient: '',
+  bank: '',
+  bank_address: ''
+})
 
 // 添加新行
 const handleAddRow = () => {
@@ -166,7 +217,6 @@ const handleExcelDownload = async () => {
 }
 
 
-
 // Handle save postage
 const handleSavePostage = () => {
 
@@ -175,6 +225,78 @@ const handleSavePostage = () => {
   emit('save-postage', postage.value)
 }
 
+const handlePurchaseOrderDownload = async () => {
+  try {
+    const response = await purchaseItemStore.downloadPurchaseItemDetailPDF(orderId, {
+      delivery_address: formData.value.delivery_address,
+      address: formData.value.address,
+      phone: formData.value.phone,
+      email: formData.value.email,
+      account: formData.value.account,
+      recipient: formData.value.recipient,
+      bank: formData.value.bank,
+      bank_address: formData.value.bank_address
+    });
+
+    // Log the response to check its structure
+    console.log('Response:', response);
+
+    // Extract filename from Content-Disposition header
+    const contentDisposition = response.headers['content-disposition'];
+    console.log('contentDisposition:', contentDisposition, 1111);
+
+    if (!contentDisposition) {
+      throw new Error('Content-Disposition header is missing');
+    }
+
+    const filenameMatch = contentDisposition.match(/filename\*?=['"]?UTF-8''([^;]+)['"]?/);
+    if (!filenameMatch || filenameMatch.length <= 1) {
+      throw new Error('Filename not found in Content-Disposition header');
+    }
+
+    const filename = decodeURIComponent(filenameMatch[1]);
+    console.log('Original filename:', filename);
+
+    // Ensure response.data is a Blob
+    if (!(response.data instanceof Blob)) {
+      throw new Error('Response is not a Blob');
+    }
+
+    const blob = response.data;
+
+    // Create a URL for the Blob and trigger download
+    const url = window.URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = filename;
+    document.body.appendChild(link); // Append to body to ensure it works in all browsers
+    link.click();
+    document.body.removeChild(link); // Clean up
+
+    // Revoke the object URL
+    window.URL.revokeObjectURL(url);
+
+  } catch (error) {
+    console.error('下载采购项目详情PDF错误:', error);
+  }
+};
+
+const handleBeforeOpenPDFOutput = async () => {
+  const response = await purchaseOrderStore.getPurchaseOrderDetail(orderId)
+  let supplierId = response.data.supplier_id
+  const supplierResponse = await supplyStore.getSupplierDetail(supplierId)
+  console.log('supplierResponse:', supplierResponse)
+  let supplyList = supplierResponse.suppliers 
+  let supply = supplyList.find(item => item.id === supplierId)
+  formData.value.address = supply.shipping_address || ''
+  formData.value.phone = supply.contact_info || ''
+  formData.value.email = supply.email||''
+  formData.value.account = supply.payment_account||''
+  formData.value.recipient = supply.payee||''
+  formData.value.bank = supply.bank_name||''
+  formData.value.bank_address = supply.bank_address||''
+  formData.value.delivery_address = `${purchaseItemStore.delivery_address} ${orderId.slice(-4)}室 库存`;
+}
 </script>
 <style scoped>
 .toolbar-container {

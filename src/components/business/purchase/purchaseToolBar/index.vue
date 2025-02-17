@@ -65,28 +65,7 @@
           </a-option>
         </a-select>
       </a-form-item>
-      <a-form-item 
-        field="supplier_id" 
-        label="供应商" 
-        :rules="[{ required: true, message: '请选择供应商' }]"
-      >
-        <a-select
-          v-model="formData.supplier_id"
-          placeholder="请选择供应商"
-          allow-search
-          :loading="supplyStore.loading"
-          :filter-option="true"
-          @search="handleSupplierSearch"
-        >
-          <a-option
-            v-for="option in supplierOptions"
-            :key="option.value"
-            :value="option.value"
-          >
-            {{ option.label }}
-          </a-option>
-        </a-select>
-      </a-form-item>
+      
       
         <a-form-item field="type" label="订单类型">
           <a-select

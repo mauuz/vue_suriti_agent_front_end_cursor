@@ -4,8 +4,8 @@ import router from '@/router'; // Adjust the path to your router file
 // 创建一个 Axios 实例
 //baseURL: 'https://api.agent.jellon.store/api/v1/'
 const instance = axios.create({
-    baseURL: 'https://api.agent.jellon.store/api/v1/', // 请替换为你的基础URL
-    //baseURL: 'http://localhost:8000/api/v1/', // 请替换为你的基础URL
+    //baseURL: 'https://api.agent.jellon.store/api/v1/', // 请替换为你的基础URL
+    baseURL: 'http://localhost:8000/api/v1/', // 请替换为你的基础URL
     timeout: 18000, // 请求超时时间
 });
 

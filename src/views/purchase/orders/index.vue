@@ -38,7 +38,7 @@ const purchaseOrderStore = usePurchaseOrderStore()
 const rowSelection = ref({
   type: 'checkbox',
   showCheckedAll: true,
-  onlyCurrent: false
+  onlyCurrent: false,
 })
 
 // 获取数据的方法

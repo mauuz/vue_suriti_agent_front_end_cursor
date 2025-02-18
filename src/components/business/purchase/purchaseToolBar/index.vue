@@ -14,6 +14,13 @@
             </template>
             删除
           </a-button>
+
+          <a-button type="primary" @click="submitAllApprovals">
+            <template #icon>
+              <icon-check />
+            </template>
+            提交审批
+          </a-button>
         </a-space>
       </div>
       <div class="right">
@@ -140,6 +147,10 @@
     } catch (error) {
       Message.error(error.message || '创建订单失败')
     }
+  }
+
+  const submitAllApprovals = async () => {
+    // await purchaseOrderStore.submitAllApprovals(purchaseOrderStore.selectedPurchaseOrder.id, '自动审批')
   }
 
   const handleSupplierSearch = async (searchValue) => {

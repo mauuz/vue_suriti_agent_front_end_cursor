@@ -8,7 +8,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, onMounted,onActivated } from 'vue'
 import { useRoute } from 'vue-router'
 import ApprovalDetailTable from '@/components/business/approval/approvalDetailTable/index.vue'
 import { useApprovalStore } from '@/stores/modules/approval/approvalStore'
@@ -25,7 +25,7 @@ const getApprovalPendingItems = async () => {
   console.log('approvalItemList:', approvalItemList.value)
 }
 
-onMounted(async () => {
+onActivated(async () => {
     await getApprovalPendingItems()
 })
 

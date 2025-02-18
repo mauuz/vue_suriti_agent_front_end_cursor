@@ -145,6 +145,7 @@ const columns = [
     { title: '数量', dataIndex: 'quantity', key: 'quantity' },
     { title: '单位', dataIndex: 'unit', key: 'unit' },
     { title: '单价', dataIndex: 'unit_price', key: 'unit_price' },
+    { title: '库存价格', dataIndex: 'inventory_price', key: 'inventory_price' },
     { title: '总价', dataIndex: 'total_price', key: 'total_price' },
     { title: '图片', dataIndex: 'pics', key: 'pics' ,slotName: 'pics'},
     { title: '备注', dataIndex: 'remark', key: 'remark' },

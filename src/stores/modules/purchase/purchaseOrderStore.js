@@ -12,6 +12,7 @@ export const usePurchaseOrderStore = defineStore('purchaseOrder', () => {
   const totalPages = ref(1);
   const pageSize = ref(10);
   const shippingFees = ref({});
+  const selectedPurchaseOrderList = ref([]);
   // 操作 (Actions)
   const getPurchaseOrders = async (params) => {
     try {
@@ -38,6 +39,8 @@ export const usePurchaseOrderStore = defineStore('purchaseOrder', () => {
           orderType: order.order_type,
           supplierName: order.supplier_name,
           supplierId: order.supplier_id,
+          shippingFee: order.shipping_fee,
+          totalPrice: parseFloat(order.sub_total) + parseFloat(order.shipping_fee),
           orderStatus: getOrderStatus(order.order_status),
           receiveStatus: getReceiveStatus(order.inventory_status),
           approvalStatus: getApprovalStatus(order.approval_status)
@@ -220,6 +223,7 @@ export const usePurchaseOrderStore = defineStore('purchaseOrder', () => {
     totalPages,
     pageSize,
     shippingFees,
+    selectedPurchaseOrderList,
 
     // 操作
     getPurchaseOrders,

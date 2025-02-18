@@ -6,6 +6,7 @@
     @page-change="$emit('page-change', $event)"
     @page-size-change="$emit('page-size-change', $event)"
     :loading="loading"
+    @selection-change="selectOnChange"
     row-key="orderNo"
     :row-selection="rowSelection"
   >
@@ -137,7 +138,8 @@ const props = defineProps({
       type: 'checkbox',
       showCheckedAll: true,
       onlyCurrent: false
-    })
+    }),
+    
   }
 })
 
@@ -177,6 +179,16 @@ const columns = [
     dataIndex: 'receiveStatus',
     width: 100,
     slotName: 'receiveStatus'
+  },
+  {
+    title: '运费',
+    dataIndex: 'shippingFee',
+    width: 100,
+  },
+  {
+    title: '结算金额（含邮费）',
+    dataIndex: 'totalPrice',
+    width: 100,
   },
   {
     title: '操作员',
@@ -225,9 +237,9 @@ const getReceiveStatusColor = (status) => {
 const getApprovalStatusColor = (status) => {
   const colorMap = {
     '未提交': 'gray',
-    '待审批': 'orange',
+    '审核中': 'orange',
     '已通过': 'green',
-    '已驳回': 'red'
+    '未通过': 'red'
   }
   return colorMap[status] || 'gray'
 }
@@ -316,6 +328,10 @@ const fetchSuppliers = async () => {
     }
   };
 
+  const selectOnChange = (selectedKeys) => {
+    console.log('Selected Row Keys:', selectedKeys);
+    purchaseOrderStore.selectedPurchaseOrderList = selectedKeys;
+  }
 </script>
 
 <style scoped>

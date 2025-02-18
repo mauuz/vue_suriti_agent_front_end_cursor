@@ -16,8 +16,6 @@ export const useApprovalStore = defineStore('approval', () => {
   const approvalHistoryTotalCount = ref(0);
   const approvalHistoryCurrentPage = ref(1);
   const approvalHistoryPageSize = ref(10);
-  
-
   // 操作 (Actions)
   const getApprovalList = async (params) => {
     try {
@@ -110,6 +108,20 @@ export const useApprovalStore = defineStore('approval', () => {
       loading.value = false;
     }
   };
+  const submitAllApprovals = async (purchaseOrderId,approvalReason) => {
+    try {
+      loading.value = true;
+      const response = await request.post(`/purchase-orders/${purchaseOrderId}/approvals`, {
+        approval_reason: approvalReason
+      });
+      return response.data;
+    } catch (error) {
+      console.error('提交所有审批失败:', error);  
+      throw error;
+    } finally {
+      loading.value = false;
+    }
+  };
 
   // 计算属性 (Getters)
   const pendingApprovals = () => {
@@ -138,7 +150,7 @@ export const useApprovalStore = defineStore('approval', () => {
     approveItem,
     getApprovalPendingItems,
     getAllApprovalHistory,
-
+    submitAllApprovals,
     // 计算属性
     pendingApprovals,
     completedApprovals,

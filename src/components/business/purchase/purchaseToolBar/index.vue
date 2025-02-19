@@ -31,7 +31,7 @@
         />
       </div>
     </div>
-
+    <!-- 创建新的采购订单 -->
     <a-modal
       v-model:visible="visible"
       title="创建采购订单"
@@ -96,16 +96,36 @@
         <a-button type="primary" @click="handleOk">确定</a-button>
       </template>
     </a-modal>
+
+
+    <!-- 审批 -->
+    <a-modal
+      v-model:visible="approvalVisible"
+      title="提交审批"
+      @cancel="handleApprovalCancel"
+      :on-before-ok="handleApprovalSubmit"
+      :mask-closable="false"
+  >
+    <a-textarea
+      v-model="reason"
+      placeholder="请输入提交的原因"
+      rows="4"
+      style="width: 100%;"
+    />
+  </a-modal>
+
+
+
   </template>
   
   <script setup>
   import { ref, watch } from 'vue'
   import { IconPlus, IconDelete } from '@arco-design/web-vue/es/icon'
   import { Message } from '@arco-design/web-vue'
-  import { usePurchaseOrderStore } from '@/stores'
-  import { useSupplyStore } from '@/stores'
+  import { usePurchaseOrderStore,useApprovalStore,useSupplyStore } from '@/stores'
   const searchKey = ref('')
   const purchaseOrderStore = usePurchaseOrderStore()
+  const approvalStore = useApprovalStore()
   const supplyStore = useSupplyStore()
   const visible = ref(false)
   const formRef = ref(null)
@@ -119,6 +139,9 @@
   const loading = ref(false)
   const supplierOptions = ref([])
 
+  const approvalVisible = ref(false)
+  const reason = ref('')
+
   const openModal = () => {
     visible.value = true
   }
@@ -127,7 +150,6 @@
     formRef.value?.resetFields()
     visible.value = false
   }
-
   const handleOk = async () => {
     try {
       console.log(formData.value)
@@ -149,8 +171,14 @@
     }
   }
 
+
+
   const submitAllApprovals = async () => {
-    // await purchaseOrderStore.submitAllApprovals(purchaseOrderStore.selectedPurchaseOrder.id, '自动审批')
+    if (purchaseOrderStore.selectedPurchaseOrderList.length === 0) {
+      Message.error('未选择任何数据！');
+    }else {
+      approvalVisible.value = true
+    }
   }
 
   const handleSupplierSearch = async (searchValue) => {
@@ -168,6 +196,40 @@
     } catch (error) {
       Message.error('获取供应商列表失败');
     }
+  };
+
+  const handleApprovalCancel = () => {
+    approvalVisible.value = false
+    reason.value = ''
+  }
+
+  const handleApprovalSubmit = async () => {
+    if (!reason.value.trim()) {
+      Message.error('提交原因不能为空');
+      return false
+    }
+
+    // console.log(purchaseOrderStore.selectedPurchaseOrderList);
+    // console.log('Submitted Reason:', reason.value);
+
+    for (let i = 0; i < purchaseOrderStore.selectedPurchaseOrderList.length; i++) {
+      console.log(purchaseOrderStore.selectedPurchaseOrderList[i])
+      await approvalStore.submitAllApprovals(
+        purchaseOrderStore.selectedPurchaseOrderList[i],
+        reason.value
+      );
+    }
+
+    await purchaseOrderStore.getPurchaseOrders({
+          page: approvalStore.currentPage,
+          pageSize: purchaseOrderStore.pageSize
+    })
+
+    Message.success('提交审批成功!')
+    approvalVisible.value = false;
+    reason.value = '';
+    purchaseOrderStore.selectedPurchaseOrderList = [];
+    return true
   };
 
   </script>

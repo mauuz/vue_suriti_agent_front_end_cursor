@@ -108,11 +108,12 @@ export const useApprovalStore = defineStore('approval', () => {
       loading.value = false;
     }
   };
+  
   const submitAllApprovals = async (purchaseOrderId,approvalReason) => {
     try {
       loading.value = true;
       const response = await request.post(`/purchase-orders/${purchaseOrderId}/approvals`, {
-        approval_reason: approvalReason
+        applicant_reason: approvalReason
       });
       return response.data;
     } catch (error) {

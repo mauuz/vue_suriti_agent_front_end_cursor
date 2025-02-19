@@ -13,6 +13,9 @@ export const usePurchaseOrderStore = defineStore('purchaseOrder', () => {
   const pageSize = ref(10);
   const shippingFees = ref({});
   const selectedPurchaseOrderList = ref([]);
+
+  const operatorFliter = ref('');
+
   // 操作 (Actions)
   const getPurchaseOrders = async (params) => {
     try {
@@ -24,7 +27,8 @@ export const usePurchaseOrderStore = defineStore('purchaseOrder', () => {
         method: 'GET',
         params: {
           page,
-          page_size: size
+          page_size: size,
+          creator_full_name: operatorFliter.value
         }
       });
 
@@ -224,6 +228,7 @@ export const usePurchaseOrderStore = defineStore('purchaseOrder', () => {
     pageSize,
     shippingFees,
     selectedPurchaseOrderList,
+    operatorFliter,
 
     // 操作
     getPurchaseOrders,

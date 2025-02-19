@@ -6,10 +6,30 @@
     @page-change="$emit('page-change', $event)"
     @page-size-change="$emit('page-size-change', $event)"
     :loading="loading"
-    @selection-change="selectOnChange"
     row-key="orderNo"
+    v-model:selectedKeys="purchaseOrderStore.selectedPurchaseOrderList"
+    @selection-change="selectOnChange"
     :row-selection="rowSelection"
-  >
+  > 
+    <template #name-filter="{ filterValue, setFilterValue, handleFilterConfirm, handleFilterReset }">
+      <div class="custom-filter">
+        <a-input 
+          v-model="purchaseOrderStore.operatorFliter" 
+          @input="(value)=>setFilterValue([value])" 
+          placeholder="请输入操作员名称"
+          style="width: 200px; margin-right: 8px;"
+        />
+        <a-button 
+          type="primary" 
+          @click="handleSearchClick(handleFilterConfirm)"
+          style="margin-right: 8px;"
+        >
+          搜索
+        </a-button>
+        <a-button @click="handleResetClick(handleFilterReset)">重置</a-button>
+      </div>
+    </template>
+
     <template #orderStatus="{ record }">
       <a-tag :color="getOrderStatusColor(record.orderStatus)">
         {{ record.orderStatus }}
@@ -106,7 +126,8 @@
 </template>
 
 <script setup>
-import { ref, nextTick } from 'vue';
+import { IconSearch } from '@arco-design/web-vue/es/icon';
+import { ref, nextTick,h } from 'vue';
 import { Message } from '@arco-design/web-vue';
 import { usePurchaseOrderStore } from '@/stores/modules/purchase/purchaseOrderStore';
 import { useRouter } from 'vue-router';
@@ -118,6 +139,8 @@ const handleSupplierSearch = async (searchValue) => {
     searchKey.value = searchValue; // 保存搜索关键词
     await fetchSuppliers(); // 调用搜索接口
 };
+
+
 const props = defineProps({
   data: {
     type: Array,
@@ -193,7 +216,12 @@ const columns = [
   {
     title: '操作员',
     dataIndex: 'operator',
-    width: 120,
+    width: 70,
+    filterable: {
+      slotName: 'name-filter',
+      icon: () => h(IconSearch)
+    }
+
   },
   {
     title: '操作时间',
@@ -329,12 +357,46 @@ const fetchSuppliers = async () => {
   };
 
   const selectOnChange = (selectedKeys) => {
-    console.log('Selected Row Keys:', selectedKeys);
+    // console.log('Selected Row Keys:', selectedKeys);
     purchaseOrderStore.selectedPurchaseOrderList = selectedKeys;
   }
+
+  const handleSearchClick = async (nativeHandler) => {
+    console.log('用户点击了搜索按钮');
+    // 在这里添加搜索的自定义逻辑
+    purchaseOrderStore.currentPage = 1;
+    await purchaseOrderStore.getPurchaseOrders({
+      page: purchaseOrderStore.currentPage,
+      pageSize: purchaseOrderStore.pageSize,
+      operator: purchaseOrderStore.operatorFliter
+    });
+    nativeHandler(); // 执行原有的过滤确认逻辑
+  };
+
+  const handleResetClick = async (nativeHandler) => {
+    console.log('用户点击了重置按钮');
+    purchaseOrderStore.operatorFliter = ''; // 示例：清空筛选值
+    purchaseOrderStore.currentPage = 1;
+    await purchaseOrderStore.getPurchaseOrders({
+      page: purchaseOrderStore.currentPage,
+      pageSize: purchaseOrderStore.pageSize,
+      operator: purchaseOrderStore.operatorFliter
+    });
+    nativeHandler(); // 执行原有的重置逻辑
+  };
 </script>
 
 <style scoped>
+.custom-filter {
+  background-color: #fff;
+  border-radius: 4px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  padding: 10px;
+  display: flex;
+  align-items: center;
+  margin-bottom: 16px;
+}
+
 :deep(.arco-btn) {
   margin-right: 8px;
 }

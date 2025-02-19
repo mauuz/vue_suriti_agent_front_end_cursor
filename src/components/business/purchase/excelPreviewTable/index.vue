@@ -38,7 +38,7 @@
 </template>
 
 <script setup>
-import { ref, defineEmits, watch } from 'vue';
+import { ref, watch } from 'vue';
 import { Message } from '@arco-design/web-vue';
 import { useRoute } from 'vue-router';
 import { usePurchaseItemStore } from '@/stores/modules/purchase/purchaseItemStore';

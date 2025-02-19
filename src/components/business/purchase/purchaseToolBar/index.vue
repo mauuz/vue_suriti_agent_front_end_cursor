@@ -21,6 +21,29 @@
             </template>
             提交审批
           </a-button>
+
+          <a-button 
+            type="primary" 
+            @click="purchaseOrder"
+            :loading="purchaseItemStore.orderLoading"
+            :disabled="purchaseItemStore.orderLoading"
+          >
+            <template #icon>
+              <icon-plus-circle />
+            </template>
+            下单
+          </a-button>
+          <a-button 
+            status="danger" 
+            @click="cancelPurchaseOrder"
+            :loading="purchaseItemStore.cancelLoading"
+            :disabled="purchaseItemStore.cancelLoading"
+          >
+            <template #icon>
+              <icon-minus-circle />
+            </template>
+            取消下单
+          </a-button>
         </a-space>
       </div>
       <div class="right">
@@ -122,11 +145,12 @@
   import { ref, watch } from 'vue'
   import { IconPlus, IconDelete } from '@arco-design/web-vue/es/icon'
   import { Message } from '@arco-design/web-vue'
-  import { usePurchaseOrderStore,useApprovalStore,useSupplyStore } from '@/stores'
+  import { usePurchaseOrderStore,useApprovalStore,useSupplyStore,usePurchaseItemStore} from '@/stores'
   const searchKey = ref('')
   const purchaseOrderStore = usePurchaseOrderStore()
   const approvalStore = useApprovalStore()
   const supplyStore = useSupplyStore()
+  const purchaseItemStore = usePurchaseItemStore()
   const visible = ref(false)
   const formRef = ref(null)
   const formData = ref({
@@ -221,8 +245,8 @@
     }
 
     await purchaseOrderStore.getPurchaseOrders({
-          page: approvalStore.currentPage,
-          pageSize: purchaseOrderStore.pageSize
+        page: approvalStore.currentPage,
+        pageSize: purchaseOrderStore.pageSize
     })
 
     Message.success('提交审批成功!')
@@ -231,6 +255,48 @@
     purchaseOrderStore.selectedPurchaseOrderList = [];
     return true
   };
+
+  const purchaseOrder = async () => {
+    console.log(purchaseOrderStore.selectedPurchaseOrderList)
+    if (purchaseOrderStore.selectedPurchaseOrderList.length === 0) {
+      Message.error('未选择任何数据！');
+      return;
+    }
+    for (let i = 0; i < purchaseOrderStore.selectedPurchaseOrderList.length; i++) {
+      await purchaseItemStore.updateAllPurchaseItemOrderStatus(
+        purchaseOrderStore.selectedPurchaseOrderList[i],
+        1
+      );
+    }
+    //刷新订单列表
+    await purchaseOrderStore.getPurchaseOrders({
+        page: approvalStore.currentPage,
+        pageSize: purchaseOrderStore.pageSize
+    })
+    purchaseOrderStore.selectedPurchaseOrderList = [];
+    Message.success('下单成功!')
+  }
+
+  const cancelPurchaseOrder = async () => {
+    console.log(purchaseOrderStore.selectedPurchaseOrderList)
+    if (purchaseOrderStore.selectedPurchaseOrderList.length === 0) {
+      Message.error('未选择任何数据！');
+      return;
+    }
+    for (let i = 0; i < purchaseOrderStore.selectedPurchaseOrderList.length; i++) {
+      await purchaseItemStore.updateAllPurchaseItemOrderStatus(
+        purchaseOrderStore.selectedPurchaseOrderList[i],
+        0
+      );
+    }
+    //刷新订单列表
+    await purchaseOrderStore.getPurchaseOrders({
+        page: approvalStore.currentPage,
+        pageSize: purchaseOrderStore.pageSize
+    })
+    purchaseOrderStore.selectedPurchaseOrderList = [];
+    Message.success('取消下单成功!')
+  }
 
   </script>
   

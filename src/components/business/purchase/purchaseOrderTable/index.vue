@@ -365,6 +365,8 @@ const fetchSuppliers = async () => {
     console.log('用户点击了搜索按钮');
     // 在这里添加搜索的自定义逻辑
     purchaseOrderStore.currentPage = 1;
+    //重置选中列表
+    purchaseOrderStore.selectedPurchaseOrderList = [];
     await purchaseOrderStore.getPurchaseOrders({
       page: purchaseOrderStore.currentPage,
       pageSize: purchaseOrderStore.pageSize,
@@ -377,6 +379,8 @@ const fetchSuppliers = async () => {
     console.log('用户点击了重置按钮');
     purchaseOrderStore.operatorFliter = ''; // 示例：清空筛选值
     purchaseOrderStore.currentPage = 1;
+    //重置选中列表
+    purchaseOrderStore.selectedPurchaseOrderList = [];
     await purchaseOrderStore.getPurchaseOrders({
       page: purchaseOrderStore.currentPage,
       pageSize: purchaseOrderStore.pageSize,

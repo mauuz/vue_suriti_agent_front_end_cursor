@@ -8,7 +8,8 @@ export const usePurchaseItemStore = defineStore('purchaseItem', () => {
   const currentItem = ref(null);
   const loading = ref(false);
   const delivery_address = ref('江苏省太仓市归庄镇渠泾村香归路华龙用呢');
-
+  const orderLoading = ref(false);
+  const cancelLoading = ref(false);
   // 操作 (Actions)
   const getPurchaseItems = async (orderId) => {
     try {
@@ -200,6 +201,23 @@ export const usePurchaseItemStore = defineStore('purchaseItem', () => {
       throw error;
     }
   };
+  const updateAllPurchaseItemOrderStatus = async (purchaseOrderId, status) => {
+    // 批量更新采购项目下单状态
+    try {
+      status === 1 ? orderLoading.value = true : cancelLoading.value = true;
+      const response = await request({
+        url: `/items/${purchaseOrderId}/purchase?status=${status}`,
+        method: 'PATCH'
+      });
+      return response;
+    } catch (error) {
+      console.error('批量更新采购项目下单状态错误:', error);
+      throw error;
+    } finally {
+      status === 1 ? orderLoading.value = false : cancelLoading.value = false;
+    }
+
+  };
 
   return {
     // 状态
@@ -207,6 +225,8 @@ export const usePurchaseItemStore = defineStore('purchaseItem', () => {
     currentItem,
     loading,
     delivery_address,
+    orderLoading,
+    cancelLoading,
     // 操作
     getPurchaseItems,
     createPurchaseItem,
@@ -218,6 +238,7 @@ export const usePurchaseItemStore = defineStore('purchaseItem', () => {
     createPurchaseItemBatch,
     updatePurchaseItemOrderStatus,
     downloadPurchaseItemDetailPDF,
+    updateAllPurchaseItemOrderStatus,
 
     // 计算属性
     activePurchaseItems,

@@ -65,6 +65,7 @@ const getStatusColor = (status) => {
     1: 'green',  // 通过
     2: 'red',    // 驳回
     0: 'blue',   // 待审批
+    3: 'orange'
   };
   return statusMap[status] || 'gray';
 };
@@ -75,6 +76,7 @@ const getStatusText = (status) => {
     1: '已通过',
     2: '已驳回',
     0: '提交审批',
+    3: '撤回审批'
   };
   return statusMap[status] || '未知状态';
 };

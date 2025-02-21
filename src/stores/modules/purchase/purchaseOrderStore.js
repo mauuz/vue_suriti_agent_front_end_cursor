@@ -22,14 +22,18 @@ export const usePurchaseOrderStore = defineStore('purchaseOrder', () => {
       loading.value = true;
       const { page = 1, pageSize: size = 10 } = params;
       
+      // 构建动态查询参数
+      const queryParams = {
+        page,
+        page_size: size,
+        // 仅当有筛选值时添加该字段
+        ...(operatorFliter.value && { creator_full_name: operatorFliter.value })
+      };
+
       const response = await request({
         url: '/purchase-orders',
         method: 'GET',
-        params: {
-          page,
-          page_size: size,
-          creator_full_name: operatorFliter.value
-        }
+        params: queryParams
       });
 
       if (response.code === 200) {

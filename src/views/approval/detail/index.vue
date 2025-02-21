@@ -17,11 +17,20 @@ const approvalStore = useApprovalStore()
 const route = useRoute()
 const approvalItemList = ref([])
 const getApprovalPendingItems = async () => {
-    const purchaseId = route.params.id
-    console.log('purchaseId:', purchaseId)
+  const purchaseId = route.params.id
+  console.log('purchaseId:', purchaseId)
   const result = await approvalStore.getApprovalPendingItems(purchaseId)
   console.log('result:', result)
-  approvalItemList.value = result.items
+
+  // Format prices to two decimal places
+  approvalItemList.value = result.items.map(item => ({
+    ...item,
+    unit_price: Number(item.unit_price).toFixed(2),
+    inventory_price: Number(item.inventory_price).toFixed(4),
+    last_purchase_price: Number(item.last_purchase_price).toFixed(2),
+    total_price: Number(item.total_price).toFixed(4)
+  }))
+
   console.log('approvalItemList:', approvalItemList.value)
 }
 

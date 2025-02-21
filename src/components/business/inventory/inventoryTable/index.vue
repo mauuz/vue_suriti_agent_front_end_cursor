@@ -42,6 +42,7 @@
     @before-ok="handleEditSubmit"
     @cancel="handleEditCancel"
     :mask-closable="false"
+    draggable
   > 
     <a-form :model="editForm" ref="editFormRef">
       <a-form-item field="name_zh" label="中文名称" :rules="[{ required: true, message: '请输入商品名称' }]">
@@ -244,7 +245,11 @@ const router = useRouter();
 // const inventoryStore = useInventoryStore();
 
 const handleEdit = (record) => {
-  editForm.value = { ...record };
+  console.log(record);
+  editForm.value = { 
+    ...record, 
+    price: Number(record.price) // Convert price to a number
+  };
   editVisible.value = true;
 };
 

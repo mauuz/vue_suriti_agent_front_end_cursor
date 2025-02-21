@@ -34,6 +34,7 @@
     title="添加新库存"
     @cancel="handleCancel"
     :mask-closable="false"
+    draggable
   >
     <a-form :model="inventoryFormData" ref="inventoryFormRef">
       <a-form-item

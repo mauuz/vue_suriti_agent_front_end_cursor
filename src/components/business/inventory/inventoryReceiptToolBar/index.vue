@@ -1,11 +1,12 @@
 <template>
   <div class="inventory-receipt">
     <a-input-search
-      v-model="searchValue"
-      placeholder="请输入订单号"
+      v-model.trim="searchValue"
+      placeholder="请输入关键字"
       search-button
       allow-clear
       @search="handleSearch"
+      @keyup.enter="handleSearch(searchValue)"
       class="search-input"
     />
   </div>

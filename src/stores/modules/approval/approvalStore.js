@@ -133,6 +133,18 @@ export const useApprovalStore = defineStore('approval', () => {
     return approvalList.value.filter(item => ['approved', 'rejected'].includes(item.status));
   };
 
+  const cancelBatchApproval = async (payload) => {
+    try {
+      loading.value = true;
+      const response = await request.post('/approval/cancel/batch', payload);
+      return response.data;
+    }catch(error){
+      console.error('撤销审批失败:', error);
+      throw error;
+    }finally{
+      loading.value = false;
+    }
+  }
 
 
   return {
@@ -152,6 +164,7 @@ export const useApprovalStore = defineStore('approval', () => {
     getApprovalPendingItems,
     getAllApprovalHistory,
     submitAllApprovals,
+    cancelBatchApproval,
     // 计算属性
     pendingApprovals,
     completedApprovals,

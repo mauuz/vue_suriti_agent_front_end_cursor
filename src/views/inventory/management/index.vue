@@ -33,7 +33,7 @@
           :row-selection="rowSelection"
           @page-change="handlePageChange"
           @page-size-change="handlePageSizeChange"
-          @refresh="fetchInventoryData"
+          @refresh="fetchSearchInventoryData"
         />
       </a-watermark>
     </div>
@@ -42,7 +42,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted,onActivated } from 'vue';
+import { ref, onActivated } from 'vue';
 import InventoryToolBar from '@/components/business/inventory/inventoryToolBar/index.vue';
 import InventoryTable from '@/components/business/inventory/inventoryTable/index.vue';
 import { useStorageStore } from '@/stores/modules/storage/storageStore';

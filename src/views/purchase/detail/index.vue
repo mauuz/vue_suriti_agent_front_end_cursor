@@ -199,12 +199,14 @@ const confirmOrderData = ref({
   orderedItems: [], // 存放已下单的列表
   unOrderedItems: [] // 存
 })
-
+const approvalData = ref({
+  submitApprovalData: [],
+  cancelApprovalData: []
+})
 
 const supplierOptions = ref([])
 const excelAddInputRef = ref(null);
 const excelReplaceInputRef = ref(null);
-const approvalData = ref([])
 const shippingFee = computed({
   get: () => {
     return purchaseOrderStore.getshippingFeeFromPurchaseOrderID(route.params.id)
@@ -361,27 +363,45 @@ const handleExcelAddFileChange = async (event) => {
 
 // submit approval
 const handleApprovalOk = async (params) => {
+  console.log(params)
   try {
-    // Extract selected keys and reason from params
-    const { selectedKeys, reason } = params;
-
-    // Construct the payload
+    const {action,selectedKeys,reason} = params
     const payload = {
       purchase_item_id_list: selectedKeys,
       applicant_reason: reason
     };
-
-    // Submit the approval request
-    await approvalStore.submitBatchApproval(payload);
-
-    // Provide success feedback to the user
-    Message.success('审批提交成功');
-    await fetchOrderDetail();
-  } catch (error) {
-    console.error('审批提交失败:', error);
-    // Provide error feedback to the user
-    Message.error('审批提交失败：' + (error.message || '未知错误'));
+    if(action === 'submit'){
+      await approvalStore.submitBatchApproval(payload)
+    }else{
+      await approvalStore.cancelBatchApproval(payload)
+    }
+    Message.success(action === 'submit' ? '审批提交成功!' : '审批撤回成功!')
+    await fetchOrderDetail()
+  }catch(error){
+    console.error('提交失败:', error);
+    Message.error('提交失败：' + (error.message || '未知错误'));
   }
+  // try {
+  //   // Extract selected keys and reason from params
+  //   const { selectedKeys, reason } = params;
+
+  //   // Construct the payload
+  //   const payload = {
+  //     purchase_item_id_list: selectedKeys,
+  //     applicant_reason: reason
+  //   };
+
+  //   // Submit the approval request
+  //   await approvalStore.submitBatchApproval(payload);
+
+  //   // Provide success feedback to the user
+  //   Message.success('审批提交成功');
+  //   await fetchOrderDetail();
+  // } catch (error) {
+  //   console.error('审批提交失败:', error);
+  //   // Provide error feedback to the user
+  //   Message.error('审批提交失败：' + (error.message || '未知错误'));
+  // }
 };
 
 const handleApprovalCancel = async()=>{
@@ -1145,16 +1165,21 @@ const handleSubmitApproval = async () => {
 
     if (response.code === 200 && Array.isArray(response.data)) {
       // Filter items where approval_status.status is not equal to 1
-      approvalData.value = response.data.filter(item => 
+      approvalData.value.submitApprovalData = response.data.filter(item => 
         item.approval_status.status === null || item.approval_status.status === 2
       );
-      
+
+      approvalData.value.cancelApprovalData = response.data.filter(item => 
+        (item.approval_status.status === 1 || item.approval_status.status === 0) && item.order_status != 1
+      );
+      approvalModalVisible.value = true;
       // Open the approval modal if there are items to approve
-      if (approvalData.value.length > 0) {
-        approvalModalVisible.value = true;
-      } else {
-        Message.info('没有可提交审批的项目');
-      }
+      // if (approvalData.value.length > 0) {
+      //   approvalModalVisible.value = true;
+      // } 
+      // else {
+      //   Message.info('没有可提交审批的项目');
+      // }
     } else {
       throw new Error('Invalid data format');
     }

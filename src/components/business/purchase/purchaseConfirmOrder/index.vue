@@ -4,12 +4,16 @@
       :width="1200"
       @ok="handleOk"
       @cancel="handleCancel"
+      :mask-closable="false"
     >
       <template #title>
           更新下单状态
       </template>
       <a-tabs v-model:activeKey="activeTab">
-        <a-tab-pane key="unordered" title="未下单">
+        <a-tab-pane key="unordered">
+          <template #title>
+            未下单 (共 {{ data.unOrderedItems.length }} 条)
+          </template>
           <div class="table-container">
             <a-table 
               :columns="columns" 
@@ -30,7 +34,10 @@
             </a-table>
           </div>
         </a-tab-pane>
-        <a-tab-pane key="ordered" title="已下单">
+        <a-tab-pane key="ordered">
+          <template #title>
+            已下单 (共 {{ data.orderedItems.length }} 条)
+          </template>
           <div class="table-container">
             <a-table 
               :columns="columns" 

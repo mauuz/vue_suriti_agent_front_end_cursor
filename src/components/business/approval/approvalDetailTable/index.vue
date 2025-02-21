@@ -147,7 +147,7 @@ const columns = [
     { title: '单价', dataIndex: 'unit_price', key: 'unit_price' },
     { title: '上次采购价', dataIndex: 'last_purchase_price', key: 'last_purchase_price' },
     { title: '库存均价', dataIndex: 'inventory_price', key: 'inventory_price' },
-    { title: '单位', dataIndex: 'storage_unit', key: 'storage_unit' },
+    { title: '库存单位', dataIndex: 'storage_unit', key: 'storage_unit' },
     { title: '总价', dataIndex: 'total_price', key: 'total_price' },
     { title: '图片', dataIndex: 'pics', key: 'pics' ,slotName: 'pics'},
     { title: '备注', dataIndex: 'remark', key: 'remark' },
